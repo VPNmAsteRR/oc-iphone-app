@@ -10,8 +10,7 @@ struct ChatScreen: View {
 
     @State private var appeared = false
     @FocusState private var composerFocused: Bool
-    @State private var showHeader = true
-    @State private var lastScrollID: String?
+    @State private var showInfo = false
 
     var body: some View {
         ZStack {
@@ -26,11 +25,12 @@ struct ChatScreen: View {
         .onAppear {
             withAnimation(Motion.gentle) { appeared = true }
         }
-        .onChange(of: store.messages.count) { _ in
-            scrollToBottom()
-        }
-        .onChange(of: store.streamingText) { _ in
-            scrollToBottom()
+        .sheet(isPresented: $showInfo) {
+            SessionSheet(
+                store: store,
+                onOpenWeb: onOpenWeb,
+                onDeleted: onBack
+            )
         }
     }
 
@@ -51,22 +51,30 @@ struct ChatScreen: View {
             }
             .glass(radius: 20, interactive: true)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(store.currentSession?.displayTitle ?? "Сессия")
-                    .font(.system(size: 15.5, weight: .semibold))
-                    .foregroundStyle(Ink.primary)
-                    .lineLimit(1)
-
-                HStack(spacing: 5) {
-                    Circle()
-                        .fill(store.isWorking ? Ink.amber : Ink.mint)
-                        .frame(width: 5, height: 5)
-                    Text(store.isWorking ? "работает" : (store.currentSession?.projectName ?? "проект"))
-                        .font(.system(size: 11.5))
-                        .foregroundStyle(Ink.tertiary)
+            Button {
+                Haptic.tap()
+                composerFocused = false
+                showInfo = true
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(store.currentSession?.displayTitle ?? "Сессия")
+                        .font(.system(size: 15.5, weight: .semibold))
+                        .foregroundStyle(Ink.primary)
                         .lineLimit(1)
+
+                    HStack(spacing: 5) {
+                        Circle()
+                            .fill(store.isWorking ? Ink.amber : Ink.mint)
+                            .frame(width: 5, height: 5)
+                        Text(store.isWorking ? "работает" : (store.currentSession?.projectName ?? "проект"))
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Ink.tertiary)
+                            .lineLimit(1)
+                    }
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
             Spacer(minLength: 4)
 
@@ -237,10 +245,6 @@ struct ChatScreen: View {
         !store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func scrollToBottom() {
-        // Прокрутка живёт внутри ScrollViewReader; здесь только цель.
-        lastScrollID = "bottom"
-    }
 }
 
 // MARK: - Сообщение

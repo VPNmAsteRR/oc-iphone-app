@@ -202,6 +202,37 @@ final class ChatStore: ObservableObject {
         }
     }
 
+    // MARK: Модель и агент
+
+    /// Сменить модель у текущей сессии.
+    func select(model: ModelInfo) async {
+        guard let session = currentSession, !session.isDraft else { return }
+        struct Ref: Encodable {
+            let id: String
+            let providerID: String
+        }
+        struct Body: Encodable {
+            let model: Ref
+        }
+        _ = try? await api.send(
+            "POST",
+            "/api/session/\(session.id)/model",
+            body: Body(model: Ref(id: model.modelID ?? model.id,
+                                  providerID: model.providerID))
+        )
+        await loadSessions()
+    }
+
+    /// Удалить сессию.
+    func delete(_ session: Session) async {
+        guard !session.isDraft else { return }
+        _ = try? await api.send("DELETE", "/api/session/\(session.id)")
+        sessions.removeAll { $0.id == session.id }
+        if currentSession?.id == session.id {
+            currentSession = nil
+        }
+    }
+
     func stopGeneration() async {
         guard let sessionID = workingSessionID ?? currentSession?.id else { return }
         _ = try? await api.send("POST", "/api/session/\(sessionID)/interrupt")

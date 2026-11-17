@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import WebKit
 
 /// Полноэкранный настоящий интерфейс OpenCode.
@@ -11,11 +12,13 @@ struct WebView: UIViewRepresentable {
     let url: URL
     let username: String
     let password: String
+    let zoom: Double
     let reloadToken: Int
     let onStateChange: (WebState) -> Void
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(username: username, password: password, onStateChange: onStateChange)
+        Coordinator(username: username, password: password,
+                    onStateChange: onStateChange)
     }
 
     func makeUIView(context: Context) -> WKWebView {
@@ -24,23 +27,47 @@ struct WebView: UIViewRepresentable {
         config.mediaTypesRequiringUserActionForPlayback = []
         config.preferences.isElementFullscreenEnabled = true
         config.websiteDataStore = .default()
+        // Полноэкранные модальные окна и всплывающие окна интерфейса.
+        config.preferences.javaScriptCanOpenWindowsAutomatically = true
 
-        // Разрешаем всё для своего сервера: интерфейс использует потоки и запросы.
         let controller = WKUserContentController()
 
-        // Тёмная тема и корректные отступы под вырез экрана.
+        // Тёмная тема, отступы под вырез экрана и аккуратные детали на телефоне.
         let css = """
-        :root { color-scheme: dark; }
-        html, body { background: #0e1014 !important; overscroll-behavior: none; }
+        :root {
+          color-scheme: dark;
+          -webkit-text-size-adjust: 100%;
+        }
+        html, body {
+          background: #090b10 !important;
+          overscroll-behavior: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+        /* Не даём системному жесту «назад» конфликтовать с полями ввода. */
+        textarea, input { font-size: max(16px, 1em) !important; }
+        ::-webkit-scrollbar { width: 0; height: 0; }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+        }
         """
-        let script = WKUserScript(source: """
+
+        let styleScript = WKUserScript(source: """
         (function() {
-            const s = document.createElement('style');
-            s.textContent = `\(css.replacingOccurrences(of: "`", with: "\\`"))`;
-            document.addEventListener('DOMContentLoaded', () => document.head.appendChild(s));
+          function apply() {
+            var s = document.getElementById('__oc_shell_style');
+            if (!s) {
+              s = document.createElement('style');
+              s.id = '__oc_shell_style';
+              (document.head || document.documentElement).appendChild(s);
+            }
+            s.textContent = `\(css.replacingOccurrences(of: "`", with: "\\`").replacingOccurrences(of: "\\", with: "\\\\"))`;
+          }
+          apply();
+          document.addEventListener('DOMContentLoaded', apply);
+          new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: false });
         })();
         """, injectionTime: .atDocumentStart, forMainFrameOnly: true)
-        controller.addUserScript(script)
+        controller.addUserScript(styleScript)
 
         config.userContentController = controller
 
@@ -50,12 +77,16 @@ struct WebView: UIViewRepresentable {
         web.allowsBackForwardNavigationGestures = true
         web.scrollView.contentInsetAdjustmentBehavior = .never
         web.scrollView.keyboardDismissMode = .interactive
+        web.allowsLinkPreview = false
         web.isOpaque = false
-        web.backgroundColor = UIColor(red: 0.055, green: 0.063, blue: 0.078, alpha: 1)
+        web.backgroundColor = UIColor(red: 0.035, green: 0.043, blue: 0.063, alpha: 1)
         web.underPageBackgroundColor = web.backgroundColor
         web.scrollView.backgroundColor = web.backgroundColor
+        web.scrollView.bounces = true
+        web.pageZoom = CGFloat(zoom)
 
         context.coordinator.webView = web
+        context.coordinator.installPullToRefresh(on: web)
         context.coordinator.load(url: url)
         return web
     }
@@ -63,6 +94,11 @@ struct WebView: UIViewRepresentable {
     func updateUIView(_ web: WKWebView, context: Context) {
         context.coordinator.username = username
         context.coordinator.password = password
+
+        if abs(web.pageZoom - CGFloat(zoom)) > 0.001 {
+            web.pageZoom = CGFloat(zoom)
+        }
+
         if context.coordinator.lastReloadToken != reloadToken {
             context.coordinator.lastReloadToken = reloadToken
             context.coordinator.load(url: url)
@@ -72,17 +108,20 @@ struct WebView: UIViewRepresentable {
     static func dismantleUIView(_ web: WKWebView, coordinator: Coordinator) {
         web.stopLoading()
         web.configuration.userContentController.removeAllUserScripts()
+        coordinator.removePullToRefresh(from: web)
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
         var username: String
         var password: String
         var lastReloadToken = 0
-        let onStateChange: (WebState) -> Void
+        var onStateChange: (WebState) -> Void
         weak var webView: WKWebView?
         private var authRetries = 0
+        private var refreshControl: UIRefreshControl?
 
-        init(username: String, password: String, onStateChange: @escaping (WebState) -> Void) {
+        init(username: String, password: String,
+             onStateChange: @escaping (WebState) -> Void) {
             self.username = username
             self.password = password
             self.onStateChange = onStateChange
@@ -94,6 +133,28 @@ struct WebView: UIViewRepresentable {
             request.cachePolicy = .reloadRevalidatingCacheData
             request.timeoutInterval = 60
             webView?.load(request)
+        }
+
+        // MARK: Обновление жестом сверху вниз
+
+        func installPullToRefresh(on web: WKWebView) {
+            let control = UIRefreshControl()
+            control.tintColor = UIColor(red: 0.486, green: 0.361, blue: 1.0, alpha: 1)
+            control.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+            web.scrollView.refreshControl = control
+            refreshControl = control
+        }
+
+        func removePullToRefresh(from web: WKWebView) {
+            web.scrollView.refreshControl = nil
+            refreshControl = nil
+        }
+
+        @objc private func handleRefresh() {
+            // Обновляем страницу целиком: так гарантированно подтягиваются
+            // новые сессии и сообщения, написанные с другого устройства.
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            webView?.reload()
         }
 
         // MARK: Авторизация
@@ -133,16 +194,19 @@ struct WebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             authRetries = 0
+            refreshControl?.endRefreshing()
             onStateChange(.ready)
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            refreshControl?.endRefreshing()
             onStateChange(.failed(error.localizedDescription))
         }
 
         func webView(_ webView: WKWebView,
                      didFailProvisionalNavigation navigation: WKNavigation!,
                      withError error: Error) {
+            refreshControl?.endRefreshing()
             let ns = error as NSError
             // Отмена загрузки — не ошибка (например, редирект).
             if ns.code == NSURLErrorCancelled { return }
@@ -157,6 +221,17 @@ struct WebView: UIViewRepresentable {
                 onStateChange(.unauthorized)
             }
             decisionHandler(.allow)
+        }
+
+        /// Ссылки «в новом окне» открываем в том же экране, чтобы не терять интерфейс.
+        func webView(_ webView: WKWebView,
+                     createWebViewWith configuration: WKWebViewConfiguration,
+                     for navigationAction: WKNavigationAction,
+                     windowFeatures: WKWindowFeatures) -> WKWebView? {
+            if navigationAction.targetFrame == nil {
+                webView.load(navigationAction.request)
+            }
+            return nil
         }
 
         // MARK: Диалоги интерфейса

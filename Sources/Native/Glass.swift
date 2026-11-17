@@ -78,36 +78,59 @@ struct AuraBackground: View {
 @available(iOS 18.0, *)
 private struct MeshBackdrop: View {
     var intensity: Double
-    @State private var phase: Double = 0
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1.0 / 20.0)) { context in
             let t = context.date.timeIntervalSinceReferenceDate
             let wave = (sin(t / 9) + 1) / 2
             let wave2 = (cos(t / 13) + 1) / 2
-
-            MeshGradient(
-                width: 3, height: 3,
-                points: [
-                    [0.0, 0.0], [0.5 + 0.08 * wave, 0.0], [1.0, 0.0],
-                    [0.0, 0.42], [0.5, 0.45 + 0.06 * wave2], [1.0, 0.40],
-                    [0.0, 1.0], [0.5 + 0.06 * wave2, 1.0], [1.0, 1.0],
-                ],
-                colors: [
-                    Ink.void,
-                    Ink.void,
-                    Color(red: 0.09, green: 0.07, blue: 0.15).opacity(intensity),
-                    Color(red: 0.06, green: 0.09, blue: 0.18).opacity(intensity),
-                    Ink.indigo.opacity(0.20 * intensity),
-                    Color(red: 0.15, green: 0.08, blue: 0.20).opacity(intensity),
-                    Ink.void,
-                    Ink.azure.opacity(0.16 * intensity),
-                    Ink.void,
-                ]
-            )
+            BackdropMesh(wave: wave, wave2: wave2, intensity: intensity)
         }
         .blur(radius: 40)
         .opacity(0.9)
+    }
+}
+
+@available(iOS 18.0, *)
+private struct BackdropMesh: View {
+    let wave: Double
+    let wave2: Double
+    let intensity: Double
+
+    var body: some View {
+        MeshGradient(width: 3, height: 3,
+                     points: meshPoints, colors: meshColors)
+    }
+
+    private var meshPoints: [SIMD2<Float>] {
+        let a = Float(wave)
+        let b = Float(wave2)
+        return [
+            SIMD2<Float>(0.0, 0.0),
+            SIMD2<Float>(0.5 + 0.08 * a, 0.0),
+            SIMD2<Float>(1.0, 0.0),
+            SIMD2<Float>(0.0, 0.42),
+            SIMD2<Float>(0.5, 0.45 + 0.06 * b),
+            SIMD2<Float>(1.0, 0.40),
+            SIMD2<Float>(0.0, 1.0),
+            SIMD2<Float>(0.5 + 0.06 * b, 1.0),
+            SIMD2<Float>(1.0, 1.0),
+        ]
+    }
+
+    private var meshColors: [Color] {
+        let k = intensity
+        return [
+            Ink.void,
+            Ink.void,
+            Color(red: 0.09, green: 0.07, blue: 0.15).opacity(k),
+            Color(red: 0.06, green: 0.09, blue: 0.18).opacity(k),
+            Ink.indigo.opacity(0.20 * k),
+            Color(red: 0.15, green: 0.08, blue: 0.20).opacity(k),
+            Ink.void,
+            Ink.azure.opacity(0.16 * k),
+            Ink.void,
+        ]
     }
 }
 

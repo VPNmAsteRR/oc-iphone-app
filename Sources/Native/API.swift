@@ -138,7 +138,6 @@ final class APIClient {
         case 401, 403:
             throw APIError.unauthorized
         default:
-            let text = String(data: data.prefix(200), encoding: .utf8) ?? ""
             throw APIError.http(http.statusCode)
         }
     }

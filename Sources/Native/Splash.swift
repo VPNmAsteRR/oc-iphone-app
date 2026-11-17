@@ -214,7 +214,7 @@ private struct ParticleOrb: View {
 
                 for point in points {
                     // Вращение вокруг Y
-                    var x = point.x * cosY + point.z * sinY
+                    let x = point.x * cosY + point.z * sinY
                     var z = -point.x * sinY + point.z * cosY
                     // Вращение вокруг X
                     let y = point.y * cosX - z * sinX

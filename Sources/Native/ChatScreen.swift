@@ -229,7 +229,7 @@ struct ChatScreen: View {
             .padding(.top, 10)
             .padding(.bottom, 6)
         }
-        .background(.ultraThinMaterial.opacity(0.4))
+        .background(.ultraThinMaterial)
         .transition(.move(edge: .bottom))
     }
 

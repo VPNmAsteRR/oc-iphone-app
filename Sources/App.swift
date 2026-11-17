@@ -50,13 +50,15 @@ struct RootView: View {
     @State private var reloadToken = 0
     @State private var state: WebState = .loading
     @State private var showSettings = false
-    @State private var showLaunch = true
+    @State private var showLaunch: Bool
     @State private var launchFaded = false
 
     enum Mode { case native, web }
 
     init() {
-        _setupDone = State(initialValue: ConnectionStore().connection.isComplete)
+        let ready = ConnectionStore().connection.isComplete
+        _setupDone = State(initialValue: ready)
+        _showLaunch = State(initialValue: ready)
     }
 
     var body: some View {
@@ -69,6 +71,8 @@ struct RootView: View {
                 SetupView {
                     setupDone = true
                     reloadToken += 1
+                    launchFaded = false
+                    showLaunch = true
                     Task { await chat.start() }
                 }
                 .transition(.opacity)
@@ -121,9 +125,6 @@ struct RootView: View {
                 showLaunch = true
                 Task { await chat.start() }
             })
-        }
-        .onChange(of: store.connection) { _ in
-            Task { await chat.start() }
         }
     }
 

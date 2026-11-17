@@ -94,10 +94,16 @@ struct ChatScreen: View {
         .padding(.top, 6)
         .padding(.bottom, 10)
         .background(
-            LinearGradient(colors: [Ink.void.opacity(0.9), Ink.void.opacity(0)],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea(edges: .top)
-                .allowsHitTesting(false)
+            ZStack(alignment: .top) {
+                Ink.void.opacity(0.92)
+                    .frame(height: 120)
+                LinearGradient(colors: [Ink.void.opacity(0.92), .clear],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 120)
+            }
+            .ignoresSafeArea(edges: .top)
+            .allowsHitTesting(false),
+            alignment: .top
         )
     }
 
@@ -143,6 +149,7 @@ struct ChatScreen: View {
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
+            .modifier(BottomAnchor())
             .onChange(of: store.streamingText) { _ in
                 withAnimation(.easeOut(duration: 0.18)) {
                     proxy.scrollTo("bottom", anchor: .bottom)
@@ -153,8 +160,14 @@ struct ChatScreen: View {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
             }
-            .onAppear {
+            .task {
+                // Ждём раскладку ленты и только потом прыгаем в конец.
+                try? await Task.sleep(nanoseconds: 120_000_000)
                 proxy.scrollTo("bottom", anchor: .bottom)
+                try? await Task.sleep(nanoseconds: 260_000_000)
+                withAnimation(.easeOut(duration: 0.3)) {
+                    proxy.scrollTo("bottom", anchor: .bottom)
+                }
             }
         }
     }
@@ -360,8 +373,8 @@ struct ReasoningCard: View {
                         .foregroundStyle(Ink.tertiary)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
-                .padding(.horizontal, 13)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -377,12 +390,12 @@ struct ReasoningCard: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Ink.orchid.opacity(0.07))
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(Ink.orchid.opacity(0.05))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Ink.orchid.opacity(0.16), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .strokeBorder(Ink.orchid.opacity(0.12), lineWidth: 1)
         )
     }
 }
@@ -420,8 +433,8 @@ struct ToolCard: View {
                         .foregroundStyle(Ink.tertiary)
                         .rotationEffect(.degrees(expanded ? 180 : 0))
                 }
-                .padding(.horizontal, 13)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -463,12 +476,12 @@ struct ToolCard: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Ink.raised.opacity(0.75))
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .fill(Ink.raised.opacity(0.45))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 13, style: .continuous)
+                .strokeBorder(Color.white.opacity(0.05), lineWidth: 1)
         )
     }
 
@@ -581,5 +594,19 @@ struct PermissionCard: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+}
+
+
+// MARK: - Прижатие к низу
+
+/// Новые сообщения появляются у нижнего края, как в мессенджерах.
+private struct BottomAnchor: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.defaultScrollAnchor(.bottom)
+        } else {
+            content
+        }
     }
 }

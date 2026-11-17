@@ -274,7 +274,8 @@ struct NativeRoot: View {
             guard value, !didAutoOpen else { return }
             didAutoOpen = true
             withAnimation(Motion.gentle) { showingChat = true }
-            if let first = chat.sessions.first {
+            // Если чат уже открыт намеренно (например, новый диалог) — не трогаем.
+            if chat.currentSession == nil, let first = chat.sessions.first {
                 Task { await chat.open(first) }
             }
         }

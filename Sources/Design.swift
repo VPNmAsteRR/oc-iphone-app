@@ -263,8 +263,6 @@ struct FieldCard<Content: View>: View {
     let systemImage: String
     @ViewBuilder var content: Content
 
-    @State private var focused = false
-
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: systemImage)

@@ -106,12 +106,20 @@ struct RootView: View {
             #endif
             await chat.start()
             #if DEBUG
-            if screen == "chat" || screen == "chatwait" {
+            if screen == "chat" {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 if let first = chat.sessions.first {
                     debugOpenChat = true
                     await chat.open(first)
                 }
+            }
+            if screen == "new" {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                await chat.newSession()
+                debugOpenChat = true
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                chat.draft = "Привет! Ответь двумя словами, что ты умеешь."
+                await chat.send()
             }
             #endif
         }

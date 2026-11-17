@@ -34,13 +34,26 @@ final class AppSettings: ObservableObject {
 
 // MARK: - Корень
 
+/// Корень приложения.
+///
+/// Два способа работы:
+/// 1. `native` — свой чат: сессии, переписка, поток ответа, разрешения.
+/// 2. `web` — тот же интерфейс, что на компьютере: терминал, диффы, файлы.
+///
+/// Оба режима смотрят в один сервер, поэтому всё синхронизировано.
 struct RootView: View {
     @EnvironmentObject private var store: ConnectionStore
+    @StateObject private var chat = ChatStore()
+
     @State private var setupDone: Bool
+    @State private var mode: Mode = .native
     @State private var reloadToken = 0
     @State private var state: WebState = .loading
     @State private var showSettings = false
-    @State private var showSplash = true
+    @State private var showLaunch = true
+    @State private var launchFaded = false
+
+    enum Mode { case native, web }
 
     init() {
         _setupDone = State(initialValue: ConnectionStore().connection.isComplete)
@@ -48,9 +61,96 @@ struct RootView: View {
 
     var body: some View {
         ZStack {
-            Palette.background.ignoresSafeArea()
+            Ink.void.ignoresSafeArea()
 
-            if setupDone, let url = store.connection.url {
+            if setupDone {
+                content
+            } else {
+                SetupView {
+                    setupDone = true
+                    reloadToken += 1
+                    Task { await chat.start() }
+                }
+                .transition(.opacity)
+            }
+
+            if showLaunch {
+                LaunchScreen(
+                    phase: chat.phase,
+                    onRetry: {
+                        launchFaded = false
+                        Task { await chat.start() }
+                    },
+                    onSettings: {
+                        showLaunch = false
+                        showSettings = true
+                    }
+                )
+                .opacity(launchFaded ? 0 : 1)
+                .scaleEffect(launchFaded ? 1.04 : 1)
+                .allowsHitTesting(!launchFaded)
+                .zIndex(20)
+                .transition(.opacity)
+            }
+        }
+        .task {
+            guard setupDone else { return }
+            await chat.start()
+        }
+        .onChange(of: chat.phase) { phase in
+            switch phase {
+            case .ready, .unauthorized, .failed:
+                if showLaunch, !launchFaded {
+                    // Даём заставке доиграть появление, затем мягко уводим.
+                    Task {
+                        try? await Task.sleep(nanoseconds: 260_000_000)
+                        withAnimation(.easeInOut(duration: 0.55)) { launchFaded = true }
+                        try? await Task.sleep(nanoseconds: 700_000_000)
+                        showLaunch = false
+                    }
+                }
+            case .connecting:
+                break
+            }
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheet(onApply: {
+                state = .loading
+                reloadToken += 1
+                launchFaded = false
+                showLaunch = true
+                Task { await chat.start() }
+            })
+        }
+        .onChange(of: store.connection) { _ in
+            Task { await chat.start() }
+        }
+    }
+
+    // MARK: Режимы
+
+    @ViewBuilder
+    private var content: some View {
+        switch mode {
+        case .native:
+            NativeRoot(
+                chat: chat,
+                onOpenWeb: {
+                    withAnimation(Motion.gentle) { mode = .web }
+                },
+                onSettings: { showSettings = true }
+            )
+            .transition(.opacity)
+
+        case .web:
+            webMode
+                .transition(.opacity)
+        }
+    }
+
+    private var webMode: some View {
+        ZStack(alignment: .top) {
+            if let url = store.connection.url {
                 WebContainer(
                     url: url,
                     username: store.connection.username,
@@ -59,187 +159,86 @@ struct RootView: View {
                     state: $state,
                     onSettings: { showSettings = true }
                 )
-            } else {
-                SetupView {
-                    setupDone = true
-                    reloadToken += 1
-                }
-                .transition(.opacity)
             }
 
-            if showSplash {
-                SplashView(
-                    state: state,
-                    onRetry: {
-                        state = .loading
-                        reloadToken += 1
-                    },
-                    onSettings: {
-                        showSplash = false
-                        showSettings = true
+            // Выход обратно в родной чат — всегда на виду, сверху справа.
+            VStack {
+                HStack {
+                    Button {
+                        Haptic.tap(.medium)
+                        withAnimation(Motion.gentle) { mode = .native }
+                        Task { await chat.refreshFromBackground() }
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "sparkles")
+                            Text("Мой чат")
+                        }
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(Ink.primary)
+                        .padding(.horizontal, 13)
+                        .padding(.vertical, 8)
                     }
-                )
-                .transition(.opacity)
-                .zIndex(10)
+                    .glass(radius: 20, interactive: true)
+
+                    Spacer()
+                }
+                .padding(.leading, 16)
+                .padding(.top, 6)
+
+                Spacer()
             }
-        }
-        .onChange(of: state) { newState in
-            // При успехе прячем заставку. При ошибке — оставляем её с кнопками
-            // «Повторить» и «Настройки», чтобы не было вечного спиннера.
-            if showSplash, case .ready = newState {
-                withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
-            }
-        }
-        .task {
-            // Страховка: если через 20 секунд ничего не произошло —
-            // показываем понятное состояние, а не бесконечный спиннер.
-            try? await Task.sleep(nanoseconds: 20_000_000_000)
-            if showSplash, case .loading = state {
-                state = .failed("Сервер не отвечает. Проверь связь или потяни для повтора.")
-            }
-        }
-        .sheet(isPresented: $showSettings) {
-            SettingsSheet(onApply: {
-                state = .loading
-                reloadToken += 1
-            })
+            .allowsHitTesting(mode == .web)
         }
     }
 }
 
-// MARK: - Заставка
+// MARK: - Родной чат
 
-struct SplashView: View {
-    let state: WebState
-    let onRetry: () -> Void
-    let onSettings: () -> Void
+struct NativeRoot: View {
+    @ObservedObject var chat: ChatStore
+    var onOpenWeb: () -> Void
+    var onSettings: () -> Void
 
-    @State private var appeared = false
-    @State private var orbit = false
+    @State private var showingChat = false
 
     var body: some View {
         ZStack {
-            AuroraBackground()
-
-            VStack(spacing: 22) {
-                Spacer()
-
-                ZStack {
-                    // Орбитальное кольцо — глубина и движение
-                    Circle()
-                        .strokeBorder(
-                            AngularGradient(
-                                colors: [Palette.blue.opacity(0.0),
-                                         Palette.blue.opacity(0.9),
-                                         Palette.violet.opacity(0.9),
-                                         Palette.blue.opacity(0.0)],
-                                center: .center
-                            ),
-                            lineWidth: 1.5
-                        )
-                        .frame(width: 168, height: 168)
-                        .rotationEffect(.degrees(orbit ? 360 : 0))
-                        .blur(radius: 0.3)
-                        .opacity(appeared ? 1 : 0)
-
-                    BrandMark3D(size: 106)
-                        .scaleEffect(appeared ? 1 : 0.7)
-                        .opacity(appeared ? 1 : 0)
-                }
-
-                VStack(spacing: 8) {
-                    Text("OpenCode")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundStyle(Palette.brandText)
-                    Text(subtitle)
-                        .font(.system(size: 14))
-                        .foregroundStyle(Palette.muted)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 30)
-                }
-                .opacity(appeared ? 1 : 0)
-                .offset(y: appeared ? 0 : 14)
-
-                switch state {
-                case .loading:
-                    DotsLoader()
-                        .padding(.top, 10)
-
-                case .failed:
-                    VStack(spacing: 11) {
-                        Button("Повторить") { onRetry() }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .frame(maxWidth: 240)
-                        Button("Настройки сервера") { onSettings() }
-                            .buttonStyle(GhostButtonStyle())
-                            .frame(maxWidth: 240)
-                    }
-                    .padding(.top, 8)
-
-                case .unauthorized:
-                    VStack(spacing: 11) {
-                        Button("Исправить пароль") { onSettings() }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .frame(maxWidth: 240)
-                        Button("Повторить") { onRetry() }
-                            .buttonStyle(GhostButtonStyle())
-                            .frame(maxWidth: 240)
-                    }
-                    .padding(.top, 8)
-
-                case .ready:
-                    EmptyView()
-                }
-
-                Spacer()
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-        }
-        .animation(.spring(response: 0.75, dampingFraction: 0.75), value: appeared)
-        .animation(.easeOut(duration: 1.1), value: state)
-        .onAppear {
-            appeared = true
-            withAnimation(.linear(duration: 7).repeatForever(autoreverses: false)) {
-                orbit = true
-            }
-        }
-    }
-
-    private var subtitle: String {
-        switch state {
-        case .loading: return "подключение к серверу"
-        case .failed: return "сервер не отвечает"
-        case .unauthorized: return "сервер не принял пароль"
-        case .ready: return ""
-        }
-    }
-}
-
-/// Три точки, бегущие по кругу — вместо системного спиннера.
-struct DotsLoader: View {
-    @State private var phase = 0
-
-    var body: some View {
-        HStack(spacing: 7) {
-            ForEach(0..<3, id: \.self) { index in
-                Circle()
-                    .fill(index == phase ? Palette.blue : Color.white.opacity(0.22))
-                    .frame(width: 7, height: 7)
-                    .scaleEffect(index == phase ? 1.35 : 1)
-            }
-        }
-        .animation(.easeInOut(duration: 0.35), value: phase)
-        .task {
-            while !Task.isCancelled {
-                try? await Task.sleep(nanoseconds: 360_000_000)
-                phase = (phase + 1) % 3
+            if showingChat {
+                ChatScreen(
+                    store: chat,
+                    onBack: {
+                        withAnimation(Motion.gentle) {
+                            showingChat = false
+                            chat.close()
+                        }
+                    },
+                    onOpenWeb: onOpenWeb
+                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .trailing).combined(with: .opacity)
+                ))
+            } else {
+                SessionListScreen(
+                    store: chat,
+                    onOpen: { session in
+                        withAnimation(Motion.gentle) { showingChat = true }
+                        Task { await chat.open(session) }
+                    },
+                    onNew: {
+                        Task { await chat.newSession() }
+                        withAnimation(Motion.gentle) { showingChat = true }
+                    },
+                    onOpenWeb: onOpenWeb,
+                    onSettings: onSettings
+                )
+                .transition(.opacity)
             }
         }
     }
 }
 
-// MARK: - Контейнер с интерфейсом
+// MARK: - Контейнер с веб-интерфейсом
 
 struct WebContainer: View {
     let url: URL
@@ -268,7 +267,6 @@ struct WebContainer: View {
             topOverlay
 
             // Слева — узкая полоса: потяни вправо, чтобы открыть панель управления.
-            // Так кнопка не перекрывает интерфейс OpenCode снизу.
             HStack {
                 ControlHandle { showPanel = true }
                 Spacer(minLength: 0)
@@ -287,7 +285,8 @@ struct WebContainer: View {
         switch state {
         case .loading:
             VStack(spacing: 10) {
-                StatusPill(text: "Загрузка", color: Palette.violet, systemImage: "arrow.triangle.2.circlepath")
+                StatusPill(text: "Загрузка", color: Palette.violet,
+                           systemImage: "arrow.triangle.2.circlepath")
                 LoadingLine()
             }
             .padding(.top, 2)

@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 40
     env:
       SCHEME: OpenCodeWeb
@@ -64,7 +64,7 @@ jobs:
             -destination 'generic/platform=iOS' -sdk iphoneos \
             -archivePath "$ARCHIVE" \
             -derivedDataPath "$RUNNER_TEMP/dd" \
-            MARKETING_VERSION="2.3.0" \
+            MARKETING_VERSION="3.0.0" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" EXPANDED_CODE_SIGN_IDENTITY="" \
@@ -97,8 +97,8 @@ jobs:
           tag_name: app-${{ github.run_number }}
           name: OpenCode iPhone (build ${{ github.run_number }})
           body: |
-            Настоящий интерфейс OpenCode в нативном приложении.
-            Тот же UI, что на ноутбуке: все сессии, инструменты, разрешения, файлы, терминал.
+            Родной чат OpenCode: те же сессии, что на компьютере, живой поток ответа,
+            разрешения и переключение в режим «как на компьютере» (терминал, диффы, файлы).
           files: ${{ env.IPA_PATH }}
           make_latest: true
           fail_on_unmatched_files: true

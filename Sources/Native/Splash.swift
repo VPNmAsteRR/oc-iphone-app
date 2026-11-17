@@ -17,7 +17,6 @@ struct LaunchScreen: View {
     @State private var appeared = false
     @State private var breathe = false
     @State private var tilt = CGSize.zero
-    @State private var revealText = false
 
     private let motion = MotionDriver()
 
@@ -60,19 +59,7 @@ struct LaunchScreen: View {
                                 startPoint: .leading, endPoint: .trailing
                             )
                         )
-                        .shadow(color: Ink.indigo.opacity(0.6), radius: 24, y: 8)
-                        .overlay(
-                            LinearGradient(
-                                colors: [.clear, .white.opacity(0.7), .clear],
-                                startPoint: .leading, endPoint: .trailing
-                            )
-                            .frame(width: 90, height: 42)
-                            .blur(radius: 14)
-                            .offset(x: revealText ? 130 : -130)
-                            .blendMode(.plusLighter)
-                            .mask(Text("OpenCode")
-                                .font(.system(size: 34, weight: .bold, design: .rounded)))
-                        )
+                        .shadow(color: Ink.indigo.opacity(0.45), radius: 10, y: 3)
 
                     Text(statusText)
                         .font(.system(size: 13.5, weight: .medium))
@@ -143,9 +130,6 @@ struct LaunchScreen: View {
             withAnimation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true)) {
                 breathe = true
             }
-            withAnimation(.linear(duration: 2.4).repeatForever(autoreverses: true)) {
-                revealText = true
-            }
             motion.start { pitch, roll in
                 withAnimation(.easeOut(duration: 0.45)) {
                     tilt = CGSize(width: roll, height: pitch)
@@ -187,7 +171,7 @@ private struct ParticleOrb: View {
     private let points: [SIMD3<Double>]
     private let radius: Double = 1.0
 
-    init(count: Int = 340) {
+    init(count: Int = 460) {
         var generated: [SIMD3<Double>] = []
         let golden = Double.pi * (3 - sqrt(5.0))
         for index in 0..<count {
@@ -315,28 +299,32 @@ private struct CoreMark: View {
                 .frame(width: 88, height: 88)
                 .blendMode(.plusLighter)
 
-            // Бегущий блик
+            // Медленный световой сектор по стеклу
             Circle()
                 .fill(
-                    LinearGradient(
-                        colors: [.clear, Color.white.opacity(0.5), .clear],
-                        startPoint: .leading, endPoint: .trailing
+                    AngularGradient(
+                        colors: [
+                            .clear,
+                            Color.white.opacity(0.28),
+                            .clear,
+                        ],
+                        center: .center,
+                        startAngle: .degrees(0),
+                        endAngle: .degrees(90)
                     )
                 )
-                .frame(width: 92, height: 92)
-                .mask(Circle())
-                .offset(x: shimmer ? 66 : -66)
+                .frame(width: 90, height: 90)
+                .rotationEffect(.degrees(shimmer ? 360 : 0))
                 .blendMode(.plusLighter)
-                .opacity(0.65)
+                .opacity(0.55)
 
             Image(systemName: "chevron.left.forwardslash.chevron.right")
                 .font(.system(size: 26, weight: .bold, design: .rounded))
                 .foregroundStyle(.white.opacity(0.96))
                 .shadow(color: .black.opacity(0.35), radius: 3, y: 1)
         }
-        .shadow(color: Ink.indigo.opacity(0.65), radius: 26, y: 10)
         .onAppear {
-            withAnimation(.easeInOut(duration: 3).repeatForever(autoreverses: true)) {
+            withAnimation(.linear(duration: 6).repeatForever(autoreverses: false)) {
                 shimmer = true
             }
         }

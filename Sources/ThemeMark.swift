@@ -136,11 +136,12 @@ enum ThemeMark {
       document.addEventListener('DOMContentLoaded', mark);
 
       // Дорисовываем классы, когда интерфейс меняется.
-      var pending = false;
+      // Во время потокового ответа изменения идут постоянно, поэтому
+      // разметка запускается с задержкой — иначе телефон начнёт тормозить.
+      var timer = null;
       new MutationObserver(function () {
-        if (pending) return;
-        pending = true;
-        requestAnimationFrame(function () { pending = false; mark(); });
+        if (timer) return;
+        timer = setTimeout(function () { timer = null; mark(); }, 160);
       }).observe(document.documentElement, { childList: true, subtree: true });
 
       if (window.visualViewport) {

@@ -1,35 +1,40 @@
 /* Оформление настоящего интерфейса OpenCode в духе Gemini.
+
    Перекрашиваем через штатные переменные темы, поэтому все состояния
    (наведение, выбор, ошибки, диффы) остаются рабочими.
 
    Важно: интерфейс использует набор --v2-*, а его стили подключаются позже
-   наших, поэтому значения задаются с !important. */
+   наших, поэтому значения задаются с !important.
+
+   Классы oc-* ставит скрипт разметки (см. WebView.swift): он находит
+   элементы по смыслу, потому что сгенерированные имена Tailwind меняются
+   от сборки к сборке. */
 
 :root {
   color-scheme: dark;
 
   /* ---- Фон: глубокий чёрный с холодным подтоном ---- */
-  --v2-background-bg-deep: #000000 !important;
-  --v2-background-bg-base: #05060a !important;
-  --v2-background-bg-layer-01: #0b0d13 !important;
-  --v2-background-bg-layer-02: #12141c !important;
-  --v2-background-bg-layer-03: #191c26 !important;
-  --v2-background-bg-layer-04: #212531 !important;
+  --v2-background-bg-deep: #0b0b0c !important;
+  --v2-background-bg-base: #131314 !important;
+  --v2-background-bg-layer-01: #1e1f20 !important;
+  --v2-background-bg-layer-02: #282a2c !important;
+  --v2-background-bg-layer-03: #303134 !important;
+  --v2-background-bg-layer-04: #3c4043 !important;
 
   /* Акцент — синий Gemini */
-  --v2-background-bg-accent: #4285f4 !important;
+  --v2-background-bg-accent: #4c8df6 !important;
   --v2-background-bg-contrast: #6b7385 !important;
   --v2-background-bg-button-neutral: rgba(255, 255, 255, 0.06) !important;
   --v2-background-bg-code-path: rgba(66, 133, 244, 0.14) !important;
 
   /* ---- Текст: белый, серый, приглушённый ---- */
-  --v2-text-text-base: #eef1f6 !important;
+  --v2-text-text-base: #e3e3e3 !important;
   --v2-text-text-contrast: #ffffff !important;
-  --v2-text-text-muted: #a8b0c0 !important;
-  --v2-text-text-faint: #6d7688 !important;
-  --v2-text-text-accent: #8ab4ff !important;
+  --v2-text-text-muted: #9aa0a6 !important;
+  --v2-text-text-faint: #6e7276 !important;
+  --v2-text-text-accent: #8ab4f8 !important;
   --v2-text-text-accent-hover: #b3cdff !important;
-  --v2-text-text-code-accent: #8ab4ff !important;
+  --v2-text-text-code-accent: #8ab4f8 !important;
   --v2-text-text-code-path: #b3cdff !important;
   --v2-text-text-inverse: #05060a !important;
 
@@ -63,14 +68,14 @@
   --v2-state-fg-danger: #ff8b84 !important;
 
   /* ---- Старый набор переменных: тот же вид ---- */
-  --background-base: #000000 !important;
-  --background-strong: #05060a !important;
-  --background-stronger: #080a0f !important;
-  --background-weak: #0e1017 !important;
-  --text-strong: #eef1f6 !important;
+  --background-base: #131314 !important;
+  --background-strong: #131314 !important;
+  --background-stronger: #0b0b0c !important;
+  --background-weak: #1e1f20 !important;
+  --text-strong: #e3e3e3 !important;
   --text-stronger: #ffffff !important;
   --text-base: #c3c8d4 !important;
-  --text-weak: #8b93a5 !important;
+  --text-weak: #9aa0a6 !important;
   --text-weaker: #626b7d !important;
   --text-interactive-base: #8ab4ff !important;
   --icon-base: #9aa3b5 !important;
@@ -86,7 +91,7 @@
   --surface-base-hover: rgba(255, 255, 255, 0.075) !important;
   --surface-weak: rgba(255, 255, 255, 0.035) !important;
   --surface-raised-base: rgba(255, 255, 255, 0.06) !important;
-  --surface-float-base: #101219 !important;
+  --surface-float-base: #1e1f20 !important;
   --surface-interactive-base: rgba(66, 133, 244, 0.16) !important;
   --markdown-link-text: #8ab4ff !important;
   --markdown-text: #eef1f6 !important;
@@ -103,20 +108,15 @@
   --icon-diff-modified-base: #ffbc55 !important;
 }
 
-/* ---- Фон: чёрный + синее свечение снизу, как в Gemini ---- */
+/* ---- Фон: ровный тёмный, как в Gemini ---- */
 html {
-  background: #000000 !important;
+  background: #0b0b0c !important;
 }
 
 body {
-  background-color: #000000 !important;
-  background-image:
-    radial-gradient(ellipse 150% 70% at 50% 122%, rgba(66, 133, 244, 0.52) 0%, rgba(66, 133, 244, 0.18) 34%, rgba(0, 0, 0, 0) 72%),
-    radial-gradient(ellipse 110% 55% at 8% 116%, rgba(124, 107, 255, 0.38) 0%, rgba(0, 0, 0, 0) 64%),
-    radial-gradient(ellipse 100% 50% at 95% 112%, rgba(0, 176, 255, 0.26) 0%, rgba(0, 0, 0, 0) 62%) !important;
-  background-attachment: fixed !important;
-  background-repeat: no-repeat !important;
-  color: #eef1f6;
+  background-color: #0b0b0c !important;
+  background-image: none !important;
+  color: #e3e3e3;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.011em;
   overscroll-behavior: none;
@@ -125,52 +125,336 @@ body {
 
 /* Оболочка приложения рисует свой сплошной фон — убираем, чтобы
    свечение было видно, и заливаем тем же градиентом саму панель. */
+.oc-shell-transparent,
 [class*="bg-v2-background-bg-deep"] {
   background-color: transparent !important;
   background-image: none !important;
 }
 
-div[class*="mx-[var(--shell-inline-inset"],
-main {
-  background-color: rgba(6, 8, 14, 0.72) !important;
-}
+/* ---- Основная панель ---- */
 
-div[class*="mx-[var(--shell-inline-inset"] {
+.oc-panel {
+  border-radius: 20px !important;
+  background-color: #131314 !important;
   background-image:
-    radial-gradient(ellipse 150% 68% at 50% 118%, rgba(66, 133, 244, 0.42) 0%, rgba(66, 133, 244, 0.13) 36%, rgba(0, 0, 0, 0) 74%),
-    radial-gradient(ellipse 105% 52% at 10% 112%, rgba(124, 107, 255, 0.30) 0%, rgba(0, 0, 0, 0) 66%),
-    radial-gradient(ellipse 95% 48% at 92% 108%, rgba(0, 176, 255, 0.22) 0%, rgba(0, 0, 0, 0) 64%) !important;
-  background-attachment: fixed !important;
-  -webkit-backdrop-filter: blur(4px);
-  backdrop-filter: blur(4px);
+    radial-gradient(ellipse 110% 34% at 50% 104%, rgba(92, 148, 255, 0.16) 0%, rgba(92, 148, 255, 0.05) 45%, rgba(0, 0, 0, 0) 74%),
+    radial-gradient(ellipse 60% 22% at 18% 102%, rgba(150, 120, 255, 0.10) 0%, rgba(0, 0, 0, 0) 70%) !important;
+  background-repeat: no-repeat !important;
+  box-shadow: none !important;
 }
 
-/* Стеклянные панели */
-[class*="rounded"], [class*="card"], [class*="dialog"], [class*="popover"] {
-  -webkit-backdrop-filter: blur(14px) saturate(1.15);
-  backdrop-filter: blur(14px) saturate(1.15);
+/* Мягкое свечение под полем ввода — единственный источник цвета внизу,
+   как у Gemini. */
+
+/* ---- Верхняя панель ---- */
+
+.oc-header {
+  background: #131314 !important;
+  border-bottom: none;
 }
 
-/* Кнопки: мягкий отклик на нажатие */
+.oc-header button {
+  border-radius: 12px !important;
+  transition: background-color 0.18s ease;
+}
+
+/* ---- Вкладки: сегментированный переключатель, как в Gemini ---- */
+
+.oc-tabs,
+[data-slot="tabs-v2-list"] {
+  background: #1e1f20 !important;
+  border: none !important;
+  border-radius: 999px !important;
+  padding: 4px !important;
+  margin: 6px 12px 10px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  box-shadow: none !important;
+}
+
+/* Убираем подчёркивание активной вкладки — в Gemini это заливка */
+.oc-tabs [data-slot="tabs-v2-trigger-wrapper"] {
+  border-bottom: none !important;
+  padding: 0 !important;
+}
+
+.oc-tabs [data-slot="tabs-v2-trigger"] {
+  border-radius: 999px !important;
+  background: transparent !important;
+  border: none !important;
+  height: 36px !important;
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: #9aa0a6 !important;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.oc-tabs [data-slot="tabs-v2-trigger"][aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #e3e3e3 !important;
+}
+
+/* Индикаторы-полоски внутри вкладок не нужны */
+.oc-tabs [data-slot="tabs-v2-trigger-wrapper"] > div[class*="absolute"],
+.oc-tabs [class*="tab-indicator"] {
+  display: none !important;
+}
+
+/* ---- Композер: круглая стеклянная капсула ---- */
+
+.oc-composer {
+  position: relative;
+  z-index: 1;
+  border-radius: 28px !important;
+  background: #1e1f20 !important;
+  border: none !important;
+  box-shadow:
+    0 10px 40px rgba(0, 0, 0, 0.35),
+    0 0 70px rgba(92, 148, 255, 0.16) !important;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.oc-composer:focus-within {
+  background: #282a2c !important;
+}
+
+/* Поле ввода внутри капсулы */
+.oc-input {
+  padding: 16px 20px 6px !important;
+  font-size: 15.5px !important;
+  line-height: 1.5 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Нижняя строка композера: отступ снизу под домашний индикатор */
+.oc-composer__bar {
+  padding: 2px 8px 8px !important;
+  height: auto !important;
+  min-height: 44px !important;
+}
+
+/* Контейнер композера: прозрачный, чтобы было видно свечение,
+   и с местом под домашний индикатор iPhone. Высоту клавиатуры
+   считает скрипт разметки и кладёт в --oc-keyboard. */
+.oc-composer-wrap {
+  position: relative;
+  background: transparent !important;
+  background-image: none !important;
+  padding-bottom: calc(var(--oc-keyboard, 0px) + env(safe-area-inset-bottom, 0px) + 8px) !important;
+}
+
+html.oc-typing .oc-composer-wrap {
+  transition: padding-bottom 0.22s ease;
+}
+
+/* Пока человек печатает, подсказки и нижние панели не мешают. */
+html.oc-typing .oc-row {
+  animation: none;
+}
+
+/* ---- Кнопки в композере ---- */
+
+.oc-chip {
+  border-radius: 999px !important;
+  background: transparent !important;
+  border: none;
+  padding: 0 10px !important;
+  height: 32px !important;
+  transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.oc-chip:active {
+  background: rgba(255, 255, 255, 0.12) !important;
+}
+
+.oc-round {
+  border-radius: 999px !important;
+  background: transparent !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background-color 0.18s ease, transform 0.14s ease;
+}
+
+.oc-round:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.10) !important;
+}
+
+/* Кнопка отправки — сине-фиолетовый градиент */
+.oc-send {
+  border-radius: 999px !important;
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #e3e3e3 !important;
+  color: #131314 !important;
+  box-shadow: none !important;
+  transition: transform 0.16s ease, opacity 0.2s ease, background-color 0.2s ease;
+}
+
+.oc-send:active {
+  transform: scale(0.92);
+  background: #ffffff !important;
+}
+
+.oc-send svg {
+  color: #131314 !important;
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* ---- Сообщения ---- */
+
+.oc-row {
+  animation: oc-rise 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes oc-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.oc-row p {
+  font-size: 15px !important;
+  line-height: 1.72 !important;
+  letter-spacing: -0.005em;
+}
+
+.oc-row h1, .oc-row h2, .oc-row h3 {
+  letter-spacing: -0.02em;
+  font-weight: 600 !important;
+}
+
+.oc-row code {
+  border-radius: 7px !important;
+  padding: 1px 6px !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+.oc-row pre {
+  border-radius: 14px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ---- Общее ---- */
+
 button {
   transition: transform 0.14s ease, background-color 0.18s ease, opacity 0.18s ease;
   -webkit-tap-highlight-color: transparent;
 }
-button:active { transform: scale(0.975); }
 
-/* Поля ввода: 16px, чтобы iOS не зумил, и свечение при фокусе */
+/* Поля ввода: 16px, чтобы iOS не зумил экран при фокусе */
 textarea, input {
   font-size: max(16px, 1em) !important;
-  transition: box-shadow 0.22s ease, border-color 0.22s ease;
-}
-textarea:focus, input:focus {
-  outline: none;
-  box-shadow: 0 0 0 1px rgba(124, 107, 255, 0.60), 0 0 20px rgba(66, 133, 244, 0.26);
 }
 
-/* Скроллбары не мешают на телефоне */
 ::-webkit-scrollbar { width: 0; height: 0; }
 
 @media (prefers-reduced-motion: reduce) {
+  .oc-row { animation: none; }
   * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* ---- Заголовок сессии: крупный, как в Gemini ---- */
+
+.oc-header button {
+  border-radius: 14px !important;
+}
+
+.oc-header button > span[class*="truncate"] {
+  font-size: 15px !important;
+  font-weight: 500 !important;
+  letter-spacing: -0.01em;
+}
+
+/* ---- Сообщения: воздух и ритм, как в Gemini ---- */
+
+.oc-row {
+  padding-top: 18px !important;
+}
+
+.oc-row [class*="px-4"],
+.oc-row [class*="px-6"] {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+/* Служебные плашки («Использовано N …») делаем тише */
+.oc-row [class*="tool-collapsible"] {
+  opacity: 0.85;
+}
+
+.oc-row [class*="tool-collapsible"] button {
+  border-radius: 12px !important;
+}
+
+/* Таблицы и списки не выпирают за края */
+.oc-row table {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.oc-row blockquote {
+  border-left: 3px solid rgba(138, 180, 248, 0.5) !important;
+  padding-left: 14px !important;
+  color: #c4c7c5 !important;
+}
+
+/* Выделение текста — в цветах темы */
+::selection {
+  background: rgba(138, 180, 248, 0.35);
+  color: #ffffff;
+}
+
+/* ---- Главный экран: список сессий, как в Gemini ---- */
+
+/* Поле поиска — таблетка на поверхности Gemini */
+.oc-search {
+  border-radius: 999px !important;
+  background: #1e1f20 !important;
+  border: none !important;
+  height: 46px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+.oc-search input {
+  font-size: 15px !important;
+}
+
+.oc-search input::placeholder {
+  color: #9aa0a6 !important;
+}
+
+/* Строка сессии: скругление и мягкое наведение вместо вспышки */
+[class*="group/session"] {
+  border-radius: 14px !important;
+  transition: background-color 0.16s ease;
+}
+
+[class*="group/session"]:active {
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Заголовки групп («Сегодня», «Вчера») — тише и мельче */
+[class*="text-v2-text-text-faint"] {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em;
+  text-transform: none !important;
+}
+
+/* Кнопка «Все проекты» — таблетка-обводка */
+button[class*="justify-between"] {
+  border-radius: 14px !important;
 }

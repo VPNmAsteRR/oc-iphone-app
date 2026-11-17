@@ -55,6 +55,13 @@ struct WebView: UIViewRepresentable {
         """, injectionTime: .atDocumentStart, forMainFrameOnly: true)
         controller.addUserScript(styleScript)
 
+        // Разметка ключевых элементов интерфейса стабильными классами
+        // и поведение при появлении клавиатуры.
+        let markScript = WKUserScript(source: ThemeMark.script,
+                                      injectionTime: .atDocumentEnd,
+                                      forMainFrameOnly: true)
+        controller.addUserScript(markScript)
+
         config.userContentController = controller
 
         let web = WKWebView(frame: .zero, configuration: config)
@@ -70,6 +77,11 @@ struct WebView: UIViewRepresentable {
         web.scrollView.backgroundColor = .black
         web.scrollView.bounces = true
         web.pageZoom = CGFloat(zoom)
+
+        // Убираем серую полосу с «‹ › Готово» над клавиатурой:
+        // она перекрывает поле ввода и мешает.
+        web.inputAssistantItem.leadingBarButtonGroups = []
+        web.inputAssistantItem.trailingBarButtonGroups = []
 
         context.coordinator.webView = web
         context.coordinator.installPullToRefresh(on: web)

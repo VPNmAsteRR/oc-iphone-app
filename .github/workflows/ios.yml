@@ -64,7 +64,7 @@ jobs:
             -destination 'generic/platform=iOS' -sdk iphoneos \
             -archivePath "$ARCHIVE" \
             -derivedDataPath "$RUNNER_TEMP/dd" \
-            MARKETING_VERSION="2.2.1" \
+            MARKETING_VERSION="2.3.0" \
             CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" EXPANDED_CODE_SIGN_IDENTITY="" \

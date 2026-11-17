@@ -261,7 +261,9 @@ struct WebContainer: View {
                     zoom: settings.zoom,
                     reloadToken: reloadToken + localReloads,
                     onStateChange: { state = $0 })
-                .ignoresSafeArea()
+                // Не игнорируем клавиатуру: иначе она накрывает поле ввода.
+                // Верх (вырез) по-прежнему занимаем целиком.
+                .ignoresSafeArea(.container, edges: .top)
 
             topOverlay
 

@@ -68,14 +68,34 @@ struct RootView: View {
             }
 
             if showSplash {
-                SplashView()
-                    .transition(.opacity)
-                    .zIndex(10)
+                SplashView(
+                    state: state,
+                    onRetry: {
+                        state = .loading
+                        reloadToken += 1
+                    },
+                    onSettings: {
+                        showSplash = false
+                        showSettings = true
+                    }
+                )
+                .transition(.opacity)
+                .zIndex(10)
             }
         }
         .onChange(of: state) { newState in
-            if case .ready = newState, showSplash {
-                withAnimation(.easeOut(duration: 0.45)) { showSplash = false }
+            // При успехе прячем заставку. При ошибке — оставляем её с кнопками
+            // «Повторить» и «Настройки», чтобы не было вечного спиннера.
+            if showSplash, case .ready = newState {
+                withAnimation(.easeOut(duration: 0.4)) { showSplash = false }
+            }
+        }
+        .task {
+            // Страховка: если через 20 секунд ничего не произошло —
+            // показываем понятное состояние, а не бесконечный спиннер.
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            if showSplash, case .loading = state {
+                state = .failed("Сервер не отвечает. Проверь связь или потяни для повтора.")
             }
         }
         .sheet(isPresented: $showSettings) {
@@ -90,6 +110,10 @@ struct RootView: View {
 // MARK: - Заставка
 
 struct SplashView: View {
+    let state: WebState
+    let onRetry: () -> Void
+    let onSettings: () -> Void
+
     @State private var pulse = false
 
     var body: some View {
@@ -105,18 +129,57 @@ struct SplashView: View {
                     Text("OpenCode")
                         .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundStyle(Palette.text)
-                    Text("подключение к серверу")
+                    Text(subtitle)
                         .font(.system(size: 13))
                         .foregroundStyle(Palette.muted)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 30)
                 }
 
-                ProgressView()
-                    .progressViewStyle(.circular)
-                    .tint(Palette.violet)
+                switch state {
+                case .loading:
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Palette.violet)
+                        .padding(.top, 6)
+
+                case .failed:
+                    VStack(spacing: 10) {
+                        Button("Повторить") { onRetry() }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .frame(maxWidth: 220)
+                        Button("Настройки сервера") { onSettings() }
+                            .buttonStyle(GhostButtonStyle())
+                            .frame(maxWidth: 220)
+                    }
                     .padding(.top, 6)
+
+                case .unauthorized:
+                    VStack(spacing: 10) {
+                        Button("Исправить пароль") { onSettings() }
+                            .buttonStyle(PrimaryButtonStyle())
+                            .frame(maxWidth: 220)
+                        Button("Повторить") { onRetry() }
+                            .buttonStyle(GhostButtonStyle())
+                            .frame(maxWidth: 220)
+                    }
+                    .padding(.top, 6)
+
+                case .ready:
+                    EmptyView()
+                }
             }
         }
         .onAppear { pulse = true }
+    }
+
+    private var subtitle: String {
+        switch state {
+        case .loading: return "подключение к серверу"
+        case .failed: return "сервер не отвечает"
+        case .unauthorized: return "сервер не принял пароль"
+        case .ready: return ""
+        }
     }
 }
 

@@ -109,6 +109,7 @@ struct WebView: UIViewRepresentable {
         web.stopLoading()
         web.configuration.userContentController.removeAllUserScripts()
         coordinator.removePullToRefresh(from: web)
+        coordinator.disarmWatchdog()
     }
 
     final class Coordinator: NSObject, WKNavigationDelegate, WKUIDelegate {
@@ -119,6 +120,7 @@ struct WebView: UIViewRepresentable {
         weak var webView: WKWebView?
         private var authRetries = 0
         private var refreshControl: UIRefreshControl?
+        private var watchdog: Task<Void, Never>?
 
         init(username: String, password: String,
              onStateChange: @escaping (WebState) -> Void) {
@@ -127,11 +129,32 @@ struct WebView: UIViewRepresentable {
             self.onStateChange = onStateChange
         }
 
+        /// Если страница начала грузиться и зависла — сообщаем об ошибке,
+        /// а не оставляем человека смотреть на пустой экран.
+        func armWatchdog() {
+            watchdog?.cancel()
+            watchdog = Task { [weak self] in
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard !Task.isCancelled, let self, let web = self.webView else { return }
+                if web.isLoading {
+                    self.refreshControl?.endRefreshing()
+                    self.onStateChange(.failed("Сервер не ответил вовремя"))
+                }
+            }
+        }
+
+        func disarmWatchdog() {
+            watchdog?.cancel()
+            watchdog = nil
+        }
+
         func load(url: URL) {
             authRetries = 0
             var request = URLRequest(url: url)
             request.cachePolicy = .reloadRevalidatingCacheData
-            request.timeoutInterval = 60
+            request.timeoutInterval = 30
+            armWatchdog()
+            onStateChange(.loading)
             webView?.load(request)
         }
 
@@ -154,6 +177,7 @@ struct WebView: UIViewRepresentable {
             // Обновляем страницу целиком: так гарантированно подтягиваются
             // новые сессии и сообщения, написанные с другого устройства.
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            armWatchdog()
             webView?.reload()
         }
 
@@ -189,16 +213,19 @@ struct WebView: UIViewRepresentable {
         // MARK: Состояние
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+            armWatchdog()
             onStateChange(.loading)
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
             authRetries = 0
+            disarmWatchdog()
             refreshControl?.endRefreshing()
             onStateChange(.ready)
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            disarmWatchdog()
             refreshControl?.endRefreshing()
             onStateChange(.failed(error.localizedDescription))
         }
@@ -206,11 +233,13 @@ struct WebView: UIViewRepresentable {
         func webView(_ webView: WKWebView,
                      didFailProvisionalNavigation navigation: WKNavigation!,
                      withError error: Error) {
+            if (error as NSError).code == NSURLErrorCancelled {
+                // Отмена — часть редиректа, сторож не снимаем: загрузка ещё идёт.
+                return
+            }
+            disarmWatchdog()
             refreshControl?.endRefreshing()
-            let ns = error as NSError
-            // Отмена загрузки — не ошибка (например, редирект).
-            if ns.code == NSURLErrorCancelled { return }
-            onStateChange(.failed(ns.localizedDescription))
+            onStateChange(.failed(error.localizedDescription))
         }
 
         func webView(_ webView: WKWebView,

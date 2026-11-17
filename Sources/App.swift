@@ -100,11 +100,19 @@ struct RootView: View {
         .task {
             guard setupDone else { return }
             #if DEBUG
-            if ProcessInfo.processInfo.environment["OC_SCREEN"] == "web" {
-                mode = .web
-            }
+            let screen = ProcessInfo.processInfo.environment["OC_SCREEN"] ?? ""
+            if screen == "web" { mode = .web }
             #endif
             await chat.start()
+            #if DEBUG
+            if screen == "chat" || screen == "chatwait" {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                if let first = chat.sessions.first {
+                    showingChat = true
+                    await chat.open(first)
+                }
+            }
+            #endif
         }
         .onChange(of: chat.phase) { phase in
             switch phase {

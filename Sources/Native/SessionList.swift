@@ -24,7 +24,7 @@ struct SessionListScreen: View {
                     searchField
                     content
                 }
-                .padding(.bottom, 120)
+                .padding(.bottom, 148)
             }
             .scrollIndicators(.hidden)
             .refreshable {
@@ -206,14 +206,19 @@ struct SessionListScreen: View {
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 10)
+            .padding(.bottom, 8)
         }
         .background(
             LinearGradient(
-                colors: [.clear, Ink.void.opacity(0.85)],
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: Ink.void.opacity(0.72), location: 0.34),
+                    .init(color: Ink.void.opacity(0.97), location: 0.62),
+                    .init(color: Ink.void, location: 1),
+                ],
                 startPoint: .top, endPoint: .bottom
             )
-            .frame(height: 150)
+            .frame(height: 190)
             .allowsHitTesting(false),
             alignment: .bottom
         )

@@ -51,6 +51,7 @@ struct RootView: View {
     @State private var state: WebState = .loading
     @State private var showSettings = false
     @State private var showLaunch: Bool
+    @State private var debugOpenChat = false
     @State private var launchFaded = false
 
     enum Mode { case native, web }
@@ -108,7 +109,7 @@ struct RootView: View {
             if screen == "chat" || screen == "chatwait" {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 if let first = chat.sessions.first {
-                    showingChat = true
+                    debugOpenChat = true
                     await chat.open(first)
                 }
             }
@@ -152,7 +153,8 @@ struct RootView: View {
                 onOpenWeb: {
                     withAnimation(Motion.gentle) { mode = .web }
                 },
-                onSettings: { showSettings = true }
+                onSettings: { showSettings = true },
+                forceOpenChat: debugOpenChat
             )
             .transition(.opacity)
 
@@ -212,8 +214,19 @@ struct NativeRoot: View {
     @ObservedObject var chat: ChatStore
     var onOpenWeb: () -> Void
     var onSettings: () -> Void
+    var forceOpenChat: Bool = false
 
-    @State private var showingChat = false
+    @State private var showingChat: Bool
+    @State private var didAutoOpen = false
+
+    init(chat: ChatStore, onOpenWeb: @escaping () -> Void,
+         onSettings: @escaping () -> Void, forceOpenChat: Bool = false) {
+        self.chat = chat
+        self.onOpenWeb = onOpenWeb
+        self.onSettings = onSettings
+        self.forceOpenChat = forceOpenChat
+        _showingChat = State(initialValue: forceOpenChat)
+    }
 
     var body: some View {
         ZStack {
@@ -247,6 +260,14 @@ struct NativeRoot: View {
                     onSettings: onSettings
                 )
                 .transition(.opacity)
+            }
+        }
+        .onChange(of: forceOpenChat) { value in
+            guard value, !didAutoOpen else { return }
+            didAutoOpen = true
+            withAnimation(Motion.gentle) { showingChat = true }
+            if let first = chat.sessions.first {
+                Task { await chat.open(first) }
             }
         }
     }

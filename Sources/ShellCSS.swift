@@ -5,182 +5,180 @@ import Foundation
 enum ShellCSS {
     static let styles = """
 /* Оформление настоящего интерфейса OpenCode в духе Gemini.
-   Перекрашиваем не «поверх», а через штатные переменные темы OpenCode,
-   поэтому все состояния (наведение, выбор, ошибки, диффы) остаются рабочими. */
+   Перекрашиваем через штатные переменные темы, поэтому все состояния
+   (наведение, выбор, ошибки, диффы) остаются рабочими.
+
+   Важно: интерфейс использует набор --v2-*, а его стили подключаются позже
+   наших, поэтому значения задаются с !important. */
 
 :root {
   color-scheme: dark;
 
-  /* Фон — глубокий чёрный с холодным оттенком */
-  --background-base: #000000;
-  --background-strong: #050507;
-  --background-stronger: #08080c;
-  --background-weak: #0e0f14;
+  /* ---- Фон: глубокий чёрный с холодным подтоном ---- */
+  --v2-background-bg-deep: #000000 !important;
+  --v2-background-bg-base: #05060a !important;
+  --v2-background-bg-layer-01: #0b0d13 !important;
+  --v2-background-bg-layer-02: #12141c !important;
+  --v2-background-bg-layer-03: #191c26 !important;
+  --v2-background-bg-layer-04: #212531 !important;
 
-  /* Поверхности — почти невидимая стеклянная плёнка */
-  --surface-base: rgba(255, 255, 255, 0.045);
-  --surface-base-hover: rgba(255, 255, 255, 0.075);
-  --surface-base-active: rgba(255, 255, 255, 0.10);
-  --surface-weak: rgba(255, 255, 255, 0.035);
-  --surface-weaker: rgba(255, 255, 255, 0.02);
-  --surface-raised-base: rgba(255, 255, 255, 0.06);
-  --surface-raised-base-hover: rgba(255, 255, 255, 0.09);
-  --surface-raised-base-active: rgba(255, 255, 255, 0.12);
-  --surface-raised-strong: rgba(255, 255, 255, 0.10);
-  --surface-raised-strong-hover: rgba(255, 255, 255, 0.14);
-  --surface-raised-stronger: rgba(255, 255, 255, 0.12);
-  --surface-raised-stronger-hover: rgba(255, 255, 255, 0.16);
-  --surface-float-base: #101219;
-  --surface-float-base-hover: #161923;
-  --surface-inset-base: rgba(0, 0, 0, 0.45);
-  --surface-inset-strong: rgba(0, 0, 0, 0.65);
+  /* Акцент — синий Gemini */
+  --v2-background-bg-accent: #4285f4 !important;
+  --v2-background-bg-contrast: #6b7385 !important;
+  --v2-background-bg-button-neutral: rgba(255, 255, 255, 0.06) !important;
+  --v2-background-bg-code-path: rgba(66, 133, 244, 0.14) !important;
 
-  /* Текст — как в Gemini: белый, серый, приглушённый */
-  --text-strong: #f2f4f8;
-  --text-stronger: #ffffff;
-  --text-base: #c3c8d4;
-  --text-weak: #8b93a5;
-  --text-weaker: #626b7d;
-  --text-invert-base: #a8b0c0;
-  --text-invert-strong: #e8ecf4;
-  --text-invert-weak: #7d8598;
+  /* ---- Текст: белый, серый, приглушённый ---- */
+  --v2-text-text-base: #eef1f6 !important;
+  --v2-text-text-contrast: #ffffff !important;
+  --v2-text-text-muted: #a8b0c0 !important;
+  --v2-text-text-faint: #6d7688 !important;
+  --v2-text-text-accent: #8ab4ff !important;
+  --v2-text-text-accent-hover: #b3cdff !important;
+  --v2-text-text-code-accent: #8ab4ff !important;
+  --v2-text-text-code-path: #b3cdff !important;
+  --v2-text-text-inverse: #05060a !important;
 
-  /* Акцент — сине-фиолетовый градиент Gemini */
-  --text-interactive-base: #8ab4ff;
-  --icon-interactive-base: #8ab4ff;
-  --border-interactive-base: #4285f4;
-  --border-interactive-hover: #6b9dff;
-  --border-interactive-active: #4285f4;
-  --border-interactive-selected: #7c6bff;
-  --border-interactive-focus: #4285f4;
-  --border-selected: rgba(124, 107, 255, 0.9);
-  --surface-interactive-base: rgba(66, 133, 244, 0.16);
-  --surface-interactive-hover: rgba(66, 133, 244, 0.24);
-  --surface-interactive-weak: rgba(66, 133, 244, 0.10);
-  --surface-base-interactive-active: rgba(66, 133, 244, 0.22);
+  /* ---- Границы: тонкие, светящиеся ---- */
+  --v2-border-border-base: rgba(255, 255, 255, 0.10) !important;
+  --v2-border-border-muted: rgba(255, 255, 255, 0.06) !important;
+  --v2-border-border-strong: rgba(255, 255, 255, 0.20) !important;
+  --v2-border-border-focus: #7c6bff !important;
 
-  /* Границы — тонкие, светящиеся */
-  --border-base: rgba(255, 255, 255, 0.12);
-  --border-weak-base: rgba(255, 255, 255, 0.09);
-  --border-weak-hover: rgba(255, 255, 255, 0.16);
-  --border-weak-active: rgba(255, 255, 255, 0.22);
-  --border-weaker-base: rgba(255, 255, 255, 0.06);
-  --border-strong-base: rgba(255, 255, 255, 0.18);
-  --border-strong-hover: rgba(255, 255, 255, 0.26);
-  --border-hover: rgba(255, 255, 255, 0.18);
-  --border-active: rgba(255, 255, 255, 0.26);
-  --border-focus: rgba(124, 107, 255, 0.75);
+  /* ---- Иконки ---- */
+  --v2-icon-icon-base: #c8cfdc !important;
+  --v2-icon-icon-muted: #8b93a5 !important;
+  --v2-icon-icon-faint: #5e6678 !important;
+  --v2-icon-icon-contrast: #ffffff !important;
+  --v2-icon-icon-accent: #8ab4ff !important;
+  --v2-icon-icon-accent-hover: #b3cdff !important;
+  --v2-icon-icon-inverse: #05060a !important;
 
-  /* Иконки */
-  --icon-base: #9aa3b5;
-  --icon-hover: #c3cad8;
-  --icon-weak-base: #6b7385;
-  --icon-weak-hover: #8b93a5;
-  --icon-strong-base: #e8ecf4;
-  --icon-invert-base: #0a0b0f;
-  --icon-on-interactive-base: #ffffff;
+  /* ---- Статусы ---- */
+  --v2-state-bg-info: rgba(66, 133, 244, 0.16) !important;
+  --v2-state-border-info: rgba(66, 133, 244, 0.55) !important;
+  --v2-state-fg-info: #8ab4ff !important;
+  --v2-state-bg-success: rgba(46, 160, 67, 0.16) !important;
+  --v2-state-border-success: rgba(46, 160, 67, 0.55) !important;
+  --v2-state-fg-success: #6fd47e !important;
+  --v2-state-bg-warning: rgba(255, 188, 85, 0.16) !important;
+  --v2-state-border-warning: rgba(255, 188, 85, 0.55) !important;
+  --v2-state-fg-warning: #ffc76b !important;
+  --v2-state-bg-danger: rgba(248, 81, 73, 0.16) !important;
+  --v2-state-border-danger: rgba(248, 81, 73, 0.55) !important;
+  --v2-state-fg-danger: #ff8b84 !important;
 
-  /* Диффы — читаемые на чёрном */
-  --surface-diff-add-base: rgba(46, 160, 67, 0.18);
-  --surface-diff-add-weak: rgba(46, 160, 67, 0.13);
-  --surface-diff-add-weaker: rgba(46, 160, 67, 0.09);
-  --surface-diff-add-strong: rgba(46, 160, 67, 0.30);
-  --surface-diff-delete-base: rgba(248, 81, 73, 0.18);
-  --surface-diff-delete-weak: rgba(248, 81, 73, 0.13);
-  --surface-diff-delete-weaker: rgba(248, 81, 73, 0.09);
-  --surface-diff-delete-strong: rgba(248, 81, 73, 0.30);
-  --text-diff-add-base: #6fd47e;
-  --text-diff-delete-base: #ff8b84;
-  --icon-diff-add-base: #6fd47e;
-  --icon-diff-delete-base: #ff8b84;
-  --icon-diff-modified-base: #ffbc55;
+  /* ---- Старый набор переменных: тот же вид ---- */
+  --background-base: #000000 !important;
+  --background-strong: #05060a !important;
+  --background-stronger: #080a0f !important;
+  --background-weak: #0e1017 !important;
+  --text-strong: #eef1f6 !important;
+  --text-stronger: #ffffff !important;
+  --text-base: #c3c8d4 !important;
+  --text-weak: #8b93a5 !important;
+  --text-weaker: #626b7d !important;
+  --text-interactive-base: #8ab4ff !important;
+  --icon-base: #9aa3b5 !important;
+  --icon-weak-base: #6b7385 !important;
+  --icon-strong-base: #eef1f6 !important;
+  --icon-interactive-base: #8ab4ff !important;
+  --border-base: rgba(255, 255, 255, 0.12) !important;
+  --border-weak-base: rgba(255, 255, 255, 0.09) !important;
+  --border-weaker-base: rgba(255, 255, 255, 0.06) !important;
+  --border-interactive-base: #4285f4 !important;
+  --border-interactive-focus: #7c6bff !important;
+  --surface-base: rgba(255, 255, 255, 0.045) !important;
+  --surface-base-hover: rgba(255, 255, 255, 0.075) !important;
+  --surface-weak: rgba(255, 255, 255, 0.035) !important;
+  --surface-raised-base: rgba(255, 255, 255, 0.06) !important;
+  --surface-float-base: #101219 !important;
+  --surface-interactive-base: rgba(66, 133, 244, 0.16) !important;
+  --markdown-link-text: #8ab4ff !important;
+  --markdown-text: #eef1f6 !important;
 
-  /* Статусы */
-  --surface-critical-base: rgba(248, 81, 73, 0.14);
-  --surface-success-base: rgba(46, 160, 67, 0.14);
-  --surface-warning-base: rgba(255, 188, 85, 0.14);
-  --text-on-critical-base: #ff8b84;
-  --text-on-success-base: #6fd47e;
-  --text-on-warning-base: #ffbc55;
-  --border-critical-base: rgba(248, 81, 73, 0.4);
-  --border-success-base: rgba(46, 160, 67, 0.4);
-  --border-warning-base: rgba(255, 188, 85, 0.4);
-
-  /* Ссылки и разметка */
-  --markdown-link-text: #8ab4ff;
-  --markdown-text: #e8ecf4;
+  /* Диффы */
+  --surface-diff-add-base: rgba(46, 160, 67, 0.18) !important;
+  --surface-diff-add-weak: rgba(46, 160, 67, 0.13) !important;
+  --surface-diff-delete-base: rgba(248, 81, 73, 0.18) !important;
+  --surface-diff-delete-weak: rgba(248, 81, 73, 0.13) !important;
+  --text-diff-add-base: #6fd47e !important;
+  --text-diff-delete-base: #ff8b84 !important;
+  --icon-diff-add-base: #6fd47e !important;
+  --icon-diff-delete-base: #ff8b84 !important;
+  --icon-diff-modified-base: #ffbc55 !important;
 }
 
-/* Общий фон и типографика */
-html, body {
+/* ---- Фон: чёрный + синее свечение снизу, как в Gemini ---- */
+html {
   background: #000000 !important;
-  color: var(--text-strong);
+}
+
+body {
+  background-color: #000000 !important;
+  background-image:
+    radial-gradient(ellipse 150% 70% at 50% 122%, rgba(66, 133, 244, 0.52) 0%, rgba(66, 133, 244, 0.18) 34%, rgba(0, 0, 0, 0) 72%),
+    radial-gradient(ellipse 110% 55% at 8% 116%, rgba(124, 107, 255, 0.38) 0%, rgba(0, 0, 0, 0) 64%),
+    radial-gradient(ellipse 100% 50% at 95% 112%, rgba(0, 176, 255, 0.26) 0%, rgba(0, 0, 0, 0) 62%) !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+  color: #eef1f6;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.011em;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Синее свечение снизу, как в Gemini. Не перехватывает касания. */
-body::after {
-  content: "";
-  position: fixed;
-  left: 50%;
-  bottom: -34vh;
-  width: 150vw;
-  height: 80vh;
-  transform: translateX(-50%);
-  pointer-events: none;
-  z-index: 0;
-  background:
-    radial-gradient(ellipse at 50% 60%, rgba(66, 133, 244, 0.30) 0%, rgba(66, 133, 244, 0.10) 34%, rgba(0, 0, 0, 0) 68%),
-    radial-gradient(ellipse at 30% 80%, rgba(124, 107, 255, 0.20) 0%, rgba(0, 0, 0, 0) 60%),
-    radial-gradient(ellipse at 74% 78%, rgba(0, 176, 255, 0.14) 0%, rgba(0, 0, 0, 0) 58%);
-  filter: blur(28px);
-  animation: oc-breathe 11s ease-in-out infinite;
+/* Оболочка приложения рисует свой сплошной фон — убираем, чтобы
+   свечение было видно, и заливаем тем же градиентом саму панель. */
+[class*="bg-v2-background-bg-deep"] {
+  background-color: transparent !important;
+  background-image: none !important;
 }
 
-@keyframes oc-breathe {
-  0%, 100% { opacity: 0.72; transform: translateX(-50%) scale(1); }
-  50%      { opacity: 1;    transform: translateX(-50%) scale(1.08); }
+div[class*="mx-[var(--shell-inline-inset"],
+main {
+  background-color: rgba(6, 8, 14, 0.72) !important;
 }
 
-/* Всё содержимое — над свечением */
-body > * { position: relative; z-index: 1; }
-
-@media (prefers-reduced-motion: reduce) {
-  body::after { animation: none; }
-  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+div[class*="mx-[var(--shell-inline-inset"] {
+  background-image:
+    radial-gradient(ellipse 150% 68% at 50% 118%, rgba(66, 133, 244, 0.42) 0%, rgba(66, 133, 244, 0.13) 36%, rgba(0, 0, 0, 0) 74%),
+    radial-gradient(ellipse 105% 52% at 10% 112%, rgba(124, 107, 255, 0.30) 0%, rgba(0, 0, 0, 0) 66%),
+    radial-gradient(ellipse 95% 48% at 92% 108%, rgba(0, 176, 255, 0.22) 0%, rgba(0, 0, 0, 0) 64%) !important;
+  background-attachment: fixed !important;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
-/* Скроллбары не мешают на телефоне */
-::-webkit-scrollbar { width: 0; height: 0; }
-
-/* Мягкие, «стеклянные» панели и карточки */
+/* Стеклянные панели */
 [class*="rounded"], [class*="card"], [class*="dialog"], [class*="popover"] {
-  backdrop-filter: blur(14px) saturate(1.2);
-  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.15);
+  backdrop-filter: blur(14px) saturate(1.15);
 }
 
-/* Кнопки: аккуратный отклик на нажатие */
+/* Кнопки: мягкий отклик на нажатие */
 button {
   transition: transform 0.14s ease, background-color 0.18s ease, opacity 0.18s ease;
   -webkit-tap-highlight-color: transparent;
 }
 button:active { transform: scale(0.975); }
 
-/* Поле ввода — с мягким свечением при фокусе */
+/* Поля ввода: 16px, чтобы iOS не зумил, и свечение при фокусе */
 textarea, input {
-  font-size: max(16px, 1em) !important; /* iOS не зумит при фокусе */
+  font-size: max(16px, 1em) !important;
   transition: box-shadow 0.22s ease, border-color 0.22s ease;
 }
 textarea:focus, input:focus {
   outline: none;
-  box-shadow: 0 0 0 1px rgba(124, 107, 255, 0.55), 0 0 22px rgba(66, 133, 244, 0.28);
-  border-radius: 16px;
+  box-shadow: 0 0 0 1px rgba(124, 107, 255, 0.60), 0 0 20px rgba(66, 133, 244, 0.26);
 }
 
-/* Немного воздуха: интерфейс не должен липнуть к краям */
-@media (max-width: 480px) {
-  body { padding-bottom: env(safe-area-inset-bottom, 0); }
+/* Скроллбары не мешают на телефоне */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
 
 """

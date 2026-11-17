@@ -63,6 +63,20 @@ final class ConnectionStore: ObservableObject {
     }
 
     init() {
+        #if DEBUG
+        // Только для отладочных сборок: позволяет прогнать приложение
+        // в симуляторе без ручного ввода настроек.
+        let env = ProcessInfo.processInfo.environment
+        if let password = env["OC_PASSWORD"], !password.isEmpty {
+            var seeded = Connection()
+            if let url = env["OC_URL"], !url.isEmpty { seeded.baseURL = url }
+            if let user = env["OC_USER"], !user.isEmpty { seeded.username = user }
+            seeded.password = password
+            connection = seeded
+            return
+        }
+        #endif
+
         if let data = Keychain.load(account: Self.account),
            let saved = try? JSONDecoder().decode(Connection.self, from: data) {
             connection = saved

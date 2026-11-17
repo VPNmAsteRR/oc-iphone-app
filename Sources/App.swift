@@ -99,6 +99,11 @@ struct RootView: View {
         }
         .task {
             guard setupDone else { return }
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["OC_SCREEN"] == "web" {
+                mode = .web
+            }
+            #endif
             await chat.start()
         }
         .onChange(of: chat.phase) { phase in

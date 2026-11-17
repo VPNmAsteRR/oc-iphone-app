@@ -66,10 +66,10 @@ jobs:
             xcrun simctl io "$DEVICE" screenshot "shots/$name.png" || true
           }
 
-          shoot 01-launch "" 1
+          shoot 01-launch "launch" 5
           shoot 02-sessions "" 12
-          shoot 03-chat "chat" 14
-          shoot 04-new "new" 26
+          shoot 03-web "web" 22
+          shoot 04-new "new" 28
           xcrun simctl spawn "$DEVICE" log show --last 2m --predicate 'processImagePath CONTAINS "OpenCode"' 2>/dev/null | grep -iE "error|fatal|exception" | head -20 || true
           ls -lh shots
 

@@ -111,6 +111,7 @@ struct ChatScreen: View {
 
     private var transcript: some View {
         ScrollViewReader { proxy in
+            GeometryReader { geo in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 14) {
                     if store.messages.isEmpty {
@@ -146,6 +147,9 @@ struct ChatScreen: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 4)
                 .padding(.bottom, 12)
+                // При короткой переписке лента растёт снизу, как в мессенджере.
+                .frame(minHeight: geo.size.height,
+                       alignment: store.messages.isEmpty ? .center : .bottom)
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
@@ -168,6 +172,7 @@ struct ChatScreen: View {
                 withAnimation(.easeOut(duration: 0.3)) {
                     proxy.scrollTo("bottom", anchor: .bottom)
                 }
+            }
             }
         }
     }

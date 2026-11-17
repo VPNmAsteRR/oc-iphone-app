@@ -124,6 +124,9 @@ struct RootView: View {
             #endif
         }
         .onChange(of: chat.phase) { phase in
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["OC_SCREEN"] == "launch" { return }
+            #endif
             switch phase {
             case .ready, .unauthorized, .failed:
                 if showLaunch, !launchFaded {

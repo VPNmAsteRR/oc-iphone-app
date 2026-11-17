@@ -114,63 +114,96 @@ struct SplashView: View {
     let onRetry: () -> Void
     let onSettings: () -> Void
 
-    @State private var pulse = false
+    @State private var appeared = false
+    @State private var orbit = false
 
     var body: some View {
         ZStack {
             AuroraBackground()
 
-            VStack(spacing: 20) {
-                BrandMark(size: 96)
-                    .scaleEffect(pulse ? 1.03 : 0.97)
-                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: pulse)
+            VStack(spacing: 22) {
+                Spacer()
 
-                VStack(spacing: 6) {
+                ZStack {
+                    // Орбитальное кольцо — глубина и движение
+                    Circle()
+                        .strokeBorder(
+                            AngularGradient(
+                                colors: [Palette.blue.opacity(0.0),
+                                         Palette.blue.opacity(0.9),
+                                         Palette.violet.opacity(0.9),
+                                         Palette.blue.opacity(0.0)],
+                                center: .center
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 168, height: 168)
+                        .rotationEffect(.degrees(orbit ? 360 : 0))
+                        .blur(radius: 0.3)
+                        .opacity(appeared ? 1 : 0)
+
+                    BrandMark3D(size: 106)
+                        .scaleEffect(appeared ? 1 : 0.7)
+                        .opacity(appeared ? 1 : 0)
+                }
+
+                VStack(spacing: 8) {
                     Text("OpenCode")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundStyle(Palette.text)
+                        .font(.system(size: 32, weight: .bold, design: .rounded))
+                        .foregroundStyle(Palette.brandText)
                     Text(subtitle)
-                        .font(.system(size: 13))
+                        .font(.system(size: 14))
                         .foregroundStyle(Palette.muted)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 30)
                 }
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 14)
 
                 switch state {
                 case .loading:
-                    ProgressView()
-                        .progressViewStyle(.circular)
-                        .tint(Palette.violet)
-                        .padding(.top, 6)
+                    DotsLoader()
+                        .padding(.top, 10)
 
                 case .failed:
-                    VStack(spacing: 10) {
+                    VStack(spacing: 11) {
                         Button("Повторить") { onRetry() }
                             .buttonStyle(PrimaryButtonStyle())
-                            .frame(maxWidth: 220)
+                            .frame(maxWidth: 240)
                         Button("Настройки сервера") { onSettings() }
                             .buttonStyle(GhostButtonStyle())
-                            .frame(maxWidth: 220)
+                            .frame(maxWidth: 240)
                     }
-                    .padding(.top, 6)
+                    .padding(.top, 8)
 
                 case .unauthorized:
-                    VStack(spacing: 10) {
+                    VStack(spacing: 11) {
                         Button("Исправить пароль") { onSettings() }
                             .buttonStyle(PrimaryButtonStyle())
-                            .frame(maxWidth: 220)
+                            .frame(maxWidth: 240)
                         Button("Повторить") { onRetry() }
                             .buttonStyle(GhostButtonStyle())
-                            .frame(maxWidth: 220)
+                            .frame(maxWidth: 240)
                     }
-                    .padding(.top, 6)
+                    .padding(.top, 8)
 
                 case .ready:
                     EmptyView()
                 }
+
+                Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+        }
+        .animation(.spring(response: 0.75, dampingFraction: 0.75), value: appeared)
+        .animation(.easeOut(duration: 1.1), value: state)
+        .onAppear {
+            appeared = true
+            withAnimation(.linear(duration: 7).repeatForever(autoreverses: false)) {
+                orbit = true
             }
         }
-        .onAppear { pulse = true }
     }
 
     private var subtitle: String {
@@ -179,6 +212,29 @@ struct SplashView: View {
         case .failed: return "сервер не отвечает"
         case .unauthorized: return "сервер не принял пароль"
         case .ready: return ""
+        }
+    }
+}
+
+/// Три точки, бегущие по кругу — вместо системного спиннера.
+struct DotsLoader: View {
+    @State private var phase = 0
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(index == phase ? Palette.blue : Color.white.opacity(0.22))
+                    .frame(width: 7, height: 7)
+                    .scaleEffect(index == phase ? 1.35 : 1)
+            }
+        }
+        .animation(.easeInOut(duration: 0.35), value: phase)
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 360_000_000)
+                phase = (phase + 1) % 3
+            }
         }
     }
 }

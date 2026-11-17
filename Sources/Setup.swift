@@ -18,18 +18,19 @@ struct SetupView: View {
 
             ScrollView {
                 VStack(spacing: 26) {
-                    VStack(spacing: 14) {
-                        BrandMark(size: 84)
-                        VStack(spacing: 6) {
+                    VStack(spacing: 16) {
+                        BrandMark3D(size: 92)
+                        VStack(spacing: 7) {
                             Text("OpenCode")
-                                .font(.system(size: 30, weight: .bold, design: .rounded))
-                                .foregroundStyle(Palette.text)
+                                .font(.system(size: 32, weight: .bold, design: .rounded))
+                                .foregroundStyle(Palette.brandText)
                             Text("Тот же интерфейс, что на ноутбуке")
                                 .font(.system(size: 14))
                                 .foregroundStyle(Palette.muted)
                         }
                     }
-                    .padding(.top, 42)
+                    .padding(.top, 46)
+                    .padding(.bottom, 4)
 
                     VStack(spacing: 10) {
                         FieldCard(title: "Адрес сервера", systemImage: "globe") {
@@ -71,16 +72,21 @@ struct SetupView: View {
                             Spacer(minLength: 0)
                         }
                         .foregroundStyle(Palette.danger)
-                        .padding(13)
-                        .background(Palette.danger.opacity(0.10), in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                                .strokeBorder(Palette.danger.opacity(0.28), lineWidth: 1)
+                        .padding(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .fill(Palette.danger.opacity(0.12))
                         )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .strokeBorder(Palette.danger.opacity(0.32), lineWidth: 1)
+                        )
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                     }
 
                     Button {
                         focused = nil
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                         Task { await check() }
                     } label: {
                         HStack(spacing: 9) {
@@ -179,7 +185,7 @@ struct ControlPanel: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Palette.background.ignoresSafeArea()
+                AuroraBackground()
 
                 ScrollView {
                     VStack(spacing: 18) {
@@ -231,11 +237,22 @@ struct ControlPanel: View {
                 Spacer(minLength: 0)
             }
         }
-        .padding(16)
-        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(17)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(Color.white.opacity(0.03))
+                )
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(colors: [Color.white.opacity(0.16), Color.white.opacity(0.04)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 1
+                )
         )
         .task { await refreshStatus() }
     }
@@ -267,11 +284,22 @@ struct ControlPanel: View {
                 .font(.system(size: 11))
                 .foregroundStyle(Palette.muted.opacity(0.85))
         }
-        .padding(16)
-        .background(Palette.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .padding(17)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 22, style: .continuous)
+                        .fill(Color.white.opacity(0.03))
+                )
+        )
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .strokeBorder(
+                    LinearGradient(colors: [Color.white.opacity(0.16), Color.white.opacity(0.04)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 1
+                )
         )
     }
 
@@ -328,7 +356,7 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Palette.background.ignoresSafeArea()
+                AuroraBackground()
 
                 ScrollView {
                     VStack(spacing: 14) {

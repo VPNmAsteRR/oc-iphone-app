@@ -32,24 +32,10 @@ struct WebView: UIViewRepresentable {
 
         let controller = WKUserContentController()
 
-        // Тёмная тема, отступы под вырез экрана и аккуратные детали на телефоне.
-        let css = """
-        :root {
-          color-scheme: dark;
-          -webkit-text-size-adjust: 100%;
-        }
-        html, body {
-          background: #090b10 !important;
-          overscroll-behavior: none;
-          -webkit-tap-highlight-color: transparent;
-        }
-        /* Не даём системному жесту «назад» конфликтовать с полями ввода. */
-        textarea, input { font-size: max(16px, 1em) !important; }
-        ::-webkit-scrollbar { width: 0; height: 0; }
-        @media (prefers-reduced-motion: reduce) {
-          * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-        }
-        """
+        // Настоящее оформление OpenCode в духе Gemini: свои переменные темы,
+        // чёрный фон, синее свечение, стеклянные панели, аккуратные нажатия.
+        // Текст стилей лежит в Sources/ShellCSS.swift (собирается из Resources/shell.css).
+        let css = ShellCSS.styles
 
         let styleScript = WKUserScript(source: """
         (function() {
@@ -79,9 +65,9 @@ struct WebView: UIViewRepresentable {
         web.scrollView.keyboardDismissMode = .interactive
         web.allowsLinkPreview = false
         web.isOpaque = false
-        web.backgroundColor = UIColor(red: 0.035, green: 0.043, blue: 0.063, alpha: 1)
-        web.underPageBackgroundColor = web.backgroundColor
-        web.scrollView.backgroundColor = web.backgroundColor
+        web.backgroundColor = .black
+        web.underPageBackgroundColor = .black
+        web.scrollView.backgroundColor = .black
         web.scrollView.bounces = true
         web.pageZoom = CGFloat(zoom)
 

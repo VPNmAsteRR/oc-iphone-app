@@ -1,0 +1,178 @@
+/* Оформление настоящего интерфейса OpenCode в духе Gemini.
+   Перекрашиваем не «поверх», а через штатные переменные темы OpenCode,
+   поэтому все состояния (наведение, выбор, ошибки, диффы) остаются рабочими. */
+
+:root {
+  color-scheme: dark;
+
+  /* Фон — глубокий чёрный с холодным оттенком */
+  --background-base: #000000;
+  --background-strong: #050507;
+  --background-stronger: #08080c;
+  --background-weak: #0e0f14;
+
+  /* Поверхности — почти невидимая стеклянная плёнка */
+  --surface-base: rgba(255, 255, 255, 0.045);
+  --surface-base-hover: rgba(255, 255, 255, 0.075);
+  --surface-base-active: rgba(255, 255, 255, 0.10);
+  --surface-weak: rgba(255, 255, 255, 0.035);
+  --surface-weaker: rgba(255, 255, 255, 0.02);
+  --surface-raised-base: rgba(255, 255, 255, 0.06);
+  --surface-raised-base-hover: rgba(255, 255, 255, 0.09);
+  --surface-raised-base-active: rgba(255, 255, 255, 0.12);
+  --surface-raised-strong: rgba(255, 255, 255, 0.10);
+  --surface-raised-strong-hover: rgba(255, 255, 255, 0.14);
+  --surface-raised-stronger: rgba(255, 255, 255, 0.12);
+  --surface-raised-stronger-hover: rgba(255, 255, 255, 0.16);
+  --surface-float-base: #101219;
+  --surface-float-base-hover: #161923;
+  --surface-inset-base: rgba(0, 0, 0, 0.45);
+  --surface-inset-strong: rgba(0, 0, 0, 0.65);
+
+  /* Текст — как в Gemini: белый, серый, приглушённый */
+  --text-strong: #f2f4f8;
+  --text-stronger: #ffffff;
+  --text-base: #c3c8d4;
+  --text-weak: #8b93a5;
+  --text-weaker: #626b7d;
+  --text-invert-base: #a8b0c0;
+  --text-invert-strong: #e8ecf4;
+  --text-invert-weak: #7d8598;
+
+  /* Акцент — сине-фиолетовый градиент Gemini */
+  --text-interactive-base: #8ab4ff;
+  --icon-interactive-base: #8ab4ff;
+  --border-interactive-base: #4285f4;
+  --border-interactive-hover: #6b9dff;
+  --border-interactive-active: #4285f4;
+  --border-interactive-selected: #7c6bff;
+  --border-interactive-focus: #4285f4;
+  --border-selected: rgba(124, 107, 255, 0.9);
+  --surface-interactive-base: rgba(66, 133, 244, 0.16);
+  --surface-interactive-hover: rgba(66, 133, 244, 0.24);
+  --surface-interactive-weak: rgba(66, 133, 244, 0.10);
+  --surface-base-interactive-active: rgba(66, 133, 244, 0.22);
+
+  /* Границы — тонкие, светящиеся */
+  --border-base: rgba(255, 255, 255, 0.12);
+  --border-weak-base: rgba(255, 255, 255, 0.09);
+  --border-weak-hover: rgba(255, 255, 255, 0.16);
+  --border-weak-active: rgba(255, 255, 255, 0.22);
+  --border-weaker-base: rgba(255, 255, 255, 0.06);
+  --border-strong-base: rgba(255, 255, 255, 0.18);
+  --border-strong-hover: rgba(255, 255, 255, 0.26);
+  --border-hover: rgba(255, 255, 255, 0.18);
+  --border-active: rgba(255, 255, 255, 0.26);
+  --border-focus: rgba(124, 107, 255, 0.75);
+
+  /* Иконки */
+  --icon-base: #9aa3b5;
+  --icon-hover: #c3cad8;
+  --icon-weak-base: #6b7385;
+  --icon-weak-hover: #8b93a5;
+  --icon-strong-base: #e8ecf4;
+  --icon-invert-base: #0a0b0f;
+  --icon-on-interactive-base: #ffffff;
+
+  /* Диффы — читаемые на чёрном */
+  --surface-diff-add-base: rgba(46, 160, 67, 0.18);
+  --surface-diff-add-weak: rgba(46, 160, 67, 0.13);
+  --surface-diff-add-weaker: rgba(46, 160, 67, 0.09);
+  --surface-diff-add-strong: rgba(46, 160, 67, 0.30);
+  --surface-diff-delete-base: rgba(248, 81, 73, 0.18);
+  --surface-diff-delete-weak: rgba(248, 81, 73, 0.13);
+  --surface-diff-delete-weaker: rgba(248, 81, 73, 0.09);
+  --surface-diff-delete-strong: rgba(248, 81, 73, 0.30);
+  --text-diff-add-base: #6fd47e;
+  --text-diff-delete-base: #ff8b84;
+  --icon-diff-add-base: #6fd47e;
+  --icon-diff-delete-base: #ff8b84;
+  --icon-diff-modified-base: #ffbc55;
+
+  /* Статусы */
+  --surface-critical-base: rgba(248, 81, 73, 0.14);
+  --surface-success-base: rgba(46, 160, 67, 0.14);
+  --surface-warning-base: rgba(255, 188, 85, 0.14);
+  --text-on-critical-base: #ff8b84;
+  --text-on-success-base: #6fd47e;
+  --text-on-warning-base: #ffbc55;
+  --border-critical-base: rgba(248, 81, 73, 0.4);
+  --border-success-base: rgba(46, 160, 67, 0.4);
+  --border-warning-base: rgba(255, 188, 85, 0.4);
+
+  /* Ссылки и разметка */
+  --markdown-link-text: #8ab4ff;
+  --markdown-text: #e8ecf4;
+}
+
+/* Общий фон и типографика */
+html, body {
+  background: #000000 !important;
+  color: var(--text-strong);
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.011em;
+}
+
+/* Синее свечение снизу, как в Gemini. Не перехватывает касания. */
+body::after {
+  content: "";
+  position: fixed;
+  left: 50%;
+  bottom: -34vh;
+  width: 150vw;
+  height: 80vh;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse at 50% 60%, rgba(66, 133, 244, 0.30) 0%, rgba(66, 133, 244, 0.10) 34%, rgba(0, 0, 0, 0) 68%),
+    radial-gradient(ellipse at 30% 80%, rgba(124, 107, 255, 0.20) 0%, rgba(0, 0, 0, 0) 60%),
+    radial-gradient(ellipse at 74% 78%, rgba(0, 176, 255, 0.14) 0%, rgba(0, 0, 0, 0) 58%);
+  filter: blur(28px);
+  animation: oc-breathe 11s ease-in-out infinite;
+}
+
+@keyframes oc-breathe {
+  0%, 100% { opacity: 0.72; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 1;    transform: translateX(-50%) scale(1.08); }
+}
+
+/* Всё содержимое — над свечением */
+body > * { position: relative; z-index: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  body::after { animation: none; }
+  * { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+}
+
+/* Скроллбары не мешают на телефоне */
+::-webkit-scrollbar { width: 0; height: 0; }
+
+/* Мягкие, «стеклянные» панели и карточки */
+[class*="rounded"], [class*="card"], [class*="dialog"], [class*="popover"] {
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+
+/* Кнопки: аккуратный отклик на нажатие */
+button {
+  transition: transform 0.14s ease, background-color 0.18s ease, opacity 0.18s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+button:active { transform: scale(0.975); }
+
+/* Поле ввода — с мягким свечением при фокусе */
+textarea, input {
+  font-size: max(16px, 1em) !important; /* iOS не зумит при фокусе */
+  transition: box-shadow 0.22s ease, border-color 0.22s ease;
+}
+textarea:focus, input:focus {
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(124, 107, 255, 0.55), 0 0 22px rgba(66, 133, 244, 0.28);
+  border-radius: 16px;
+}
+
+/* Немного воздуха: интерфейс не должен липнуть к краям */
+@media (max-width: 480px) {
+  body { padding-bottom: env(safe-area-inset-bottom, 0); }
+}

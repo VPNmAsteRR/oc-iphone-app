@@ -1,0 +1,24 @@
+name: Probe toolchain
+
+on:
+  workflow_dispatch:
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-15, macos-26]
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+    steps:
+      - name: What is installed
+        run: |
+          echo "=== runner: ${{ matrix.runner }}"
+          sw_vers || true
+          echo "--- Xcode apps:"
+          ls -1 /Applications | grep -i xcode || echo "нет Xcode в /Applications"
+          echo "--- current:"
+          xcodebuild -version || true
+          echo "--- SDKs:"
+          xcodebuild -showsdks 2>/dev/null | grep -i ios || true

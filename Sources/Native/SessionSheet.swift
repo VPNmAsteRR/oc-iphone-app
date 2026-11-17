@@ -33,7 +33,6 @@ struct SessionSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.hidden)
-        .presentationBackground(.clear)
     }
 
     private var grabber: some View {

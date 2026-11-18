@@ -144,7 +144,10 @@ struct RootView: View {
             if ProcessInfo.processInfo.environment["OC_SCREEN"] == "launch" { return }
             #endif
             switch phase {
-            case .ready, .unauthorized, .failed:
+            // Заставку убираем только когда сервер реально ответил.
+            // Иначе человек остаётся на экране с понятными кнопками
+            // «Повторить» / «Настройки», а не с пустым списком.
+            case .ready:
                 if showLaunch, !launchFaded {
                     // Даём заставке доиграть появление, затем мягко уводим.
                     Task {
@@ -154,7 +157,7 @@ struct RootView: View {
                         showLaunch = false
                     }
                 }
-            case .connecting:
+            case .connecting, .unauthorized, .failed:
                 break
             }
         }

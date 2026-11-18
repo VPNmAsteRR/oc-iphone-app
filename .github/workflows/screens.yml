@@ -28,10 +28,9 @@ jobs:
       - name: Build for simulator
         run: |
           set -euo pipefail
-          python3 build_css.py
           xcodegen generate --spec project.yml
           # Собираем один раз: приложение одно и то же для всех экранов.
-          xcodebuild -project OpenCodeWeb.xcodeproj -scheme OpenCodeWeb \
+          xcodebuild -project OpenCode.xcodeproj -scheme OpenCode \
             -configuration Debug -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/dd" \
@@ -90,7 +89,6 @@ jobs:
           shoot "$DEVICE_NAME" "${SLUG}-a-launch" "launch" 6
           shoot "$DEVICE_NAME" "${SLUG}-b-sessions" "" 10
           shoot "$DEVICE_NAME" "${SLUG}-c-empty" "empty" 20
-          shoot "$DEVICE_NAME" "${SLUG}-d-web" "web" 24
           shoot "$DEVICE_NAME" "${SLUG}-f-keyboard" "keyboard" 26
 
           # Без связи: понятные кнопки вместо бесконечной загрузки.

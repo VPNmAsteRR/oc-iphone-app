@@ -2,17 +2,17 @@ import SwiftUI
 
 // MARK: - Список сессий
 
-/// Главный экран: все сессии, сгруппированные по времени,
-/// с поиском и плавным появлением.
+/// Главный экран: приветствие, поиск и все сессии, сгруппированные
+/// по времени. Внизу — единственное действие: новый диалог.
 struct SessionListScreen: View {
     @ObservedObject var store: ChatStore
     var onOpen: (Session) -> Void
-    var onNew: () -> Void
-    var onOpenWeb: () -> Void
+    var onNew: (String) -> Void
     var onSettings: () -> Void
 
     @State private var appeared = false
-    @FocusState private var searchFocused: Bool
+    @State private var draft = ""
+    @FocusState private var composerFocused: Bool
 
     var body: some View {
         ZStack {
@@ -21,18 +21,20 @@ struct SessionListScreen: View {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: []) {
                     header
+                    startBlock
                     searchField
                     content
                 }
                 .padding(.bottom, 18)
             }
             .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
             .refreshable {
                 Haptic.tap()
                 await store.loadSessions()
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
-                bottomBar
+                newChatBar
             }
         }
         .onAppear {
@@ -71,6 +73,96 @@ struct SessionListScreen: View {
         .offset(y: appeared ? 0 : -10)
     }
 
+    // MARK: Быстрый старт
+
+    /// Крупное поле ввода на главном экране, как в Gemini: можно начать
+    /// диалог, не заходя ни в какую сессию.
+    private var startBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(store.sessions.isEmpty ? "С чего начнём?" : "Начать новый диалог")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Ink.tertiary)
+                .padding(.leading, 4)
+
+            HStack(alignment: .bottom, spacing: 10) {
+                TextField("Спроси что угодно", text: $draft, axis: .vertical)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 15.5))
+                    .foregroundStyle(Ink.primary)
+                    .lineLimit(1...5)
+                    .focused($composerFocused)
+                    .padding(.leading, 4)
+                    .padding(.vertical, 10)
+
+                Button {
+                    Haptic.tap(.medium)
+                    submit()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(canStart ? Ink.aura : LinearGradient(
+                                colors: [Color.white.opacity(0.09), Color.white.opacity(0.06)],
+                                startPoint: .top, endPoint: .bottom))
+                            .frame(width: 40, height: 40)
+                        Image(systemName: "arrow.up")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundStyle(canStart ? .white : Ink.tertiary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(!canStart)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Ink.raised.opacity(0.86))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.08), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.35), radius: 16, y: 8)
+
+            quickStarts
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 22)
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 14)
+    }
+
+    private var quickStarts: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(Self.quickIdeas, id: \.self) { idea in
+                    Button {
+                        Haptic.select()
+                        draft = idea
+                        composerFocused = true
+                    } label: {
+                        Text(idea)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(Ink.secondary)
+                            .padding(.horizontal, 14)
+                            .frame(height: 36)
+                            .glass(radius: 18, interactive: true)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 2)
+            .padding(.vertical, 2)
+        }
+    }
+
+    private static let quickIdeas = [
+        "Что делали в прошлый раз?",
+        "Что изменилось в проекте?",
+        "Найди ошибку",
+        "Добавь тесты",
+    ]
+
     // MARK: Поиск
 
     private var searchField: some View {
@@ -83,7 +175,6 @@ struct SessionListScreen: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 15))
                 .foregroundStyle(Ink.primary)
-                .focused($searchFocused)
                 .submitLabel(.search)
                 .autocorrectionDisabled()
 
@@ -141,7 +232,6 @@ struct SessionListScreen: View {
                         onDelete: {
                             Task { await store.delete(session) }
                         },
-                        onOpenWeb: onOpenWeb,
                         busy: store.activeSessions.contains(session.id)
                     )
                 }
@@ -166,27 +256,26 @@ struct SessionListScreen: View {
                 .foregroundStyle(Ink.primary)
 
             Text(store.searchText.isEmpty
-                 ? "Начни диалог — он появится и на компьютере"
+                 ? "Напиши первое сообщение — ответ появится здесь и на компьютере"
                  : "Попробуй другое название")
                 .font(.system(size: 13.5))
                 .foregroundStyle(Ink.tertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 70)
+        .padding(.top, 40)
         .transition(.opacity)
     }
 
     // MARK: Нижняя панель
 
-    private var bottomBar: some View {
+    /// Одно действие: новый диалог. Фон тянется до краёв экрана,
+    /// карточки над панелью мягко растворяются.
+    private var newChatBar: some View {
         ZStack(alignment: .bottom) {
-            // Фон во всю ширину и до самого низа экрана. Color сам
-            // растягивается на безопасные зоны, поэтому рамки не видно.
             Ink.void
                 .ignoresSafeArea(edges: [.bottom, .horizontal])
 
-            // Мягкий переход: карточки растворяются над панелью.
             LinearGradient(
                 colors: [.clear, Ink.void.opacity(0.85), Ink.void],
                 startPoint: .top, endPoint: .bottom
@@ -195,41 +284,41 @@ struct SessionListScreen: View {
             .offset(y: -52)
             .allowsHitTesting(false)
 
-            HStack(spacing: 10) {
-                Button {
-                    Haptic.tap(.medium)
-                    onOpenWeb()
-                } label: {
-                    Label("Как на компьютере", systemImage: "display")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Ink.secondary)
-                        .padding(.horizontal, 16)
-                        .frame(height: 48)
+            Button {
+                Haptic.tap(.medium)
+                onNew("")
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 15, weight: .bold))
+                    Text("Новый диалог")
+                        .font(.system(size: 15.5, weight: .semibold))
                 }
-                .glass(radius: 24, interactive: true)
-
-                Button {
-                    Haptic.tap(.medium)
-                    onNew()
-                } label: {
-                    HStack(spacing: 7) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 15, weight: .bold))
-                        Text("Новая")
-                            .font(.system(size: 15, weight: .semibold))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 22)
-                    .frame(height: 48)
-                    .background(Capsule().fill(Ink.aura))
-                    .shadow(color: Ink.indigo.opacity(0.55), radius: 18, y: 8)
-                }
-                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 50)
+                .background(Capsule().fill(Ink.aura))
+                .shadow(color: Ink.indigo.opacity(0.5), radius: 18, y: 8)
             }
+            .buttonStyle(.plain)
             .padding(.horizontal, 20)
             .padding(.top, 10)
             .padding(.bottom, 8)
         }
+    }
+
+    // MARK: Действия
+
+    private var canStart: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func submit() {
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        draft = ""
+        composerFocused = false
+        onNew(text)
     }
 
     // MARK: Группировка
@@ -280,7 +369,6 @@ struct SessionRow: View {
     let session: Session
     var action: () -> Void
     var onDelete: () -> Void = {}
-    var onOpenWeb: () -> Void = {}
     var busy: Bool = false
 
     @State private var pressed = false
@@ -339,12 +427,6 @@ struct SessionRow: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Button {
-                Haptic.tap()
-                onOpenWeb()
-            } label: {
-                Label("Открыть как на компьютере", systemImage: "display")
-            }
             Button(role: .destructive) {
                 Haptic.tap(.medium)
                 onDelete()

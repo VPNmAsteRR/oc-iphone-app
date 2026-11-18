@@ -298,30 +298,3 @@ struct FieldCard<Content: View>: View {
         )
     }
 }
-
-// MARK: - Пилюля состояния
-
-struct StatusPill: View {
-    let text: String
-    let color: Color
-    var systemImage: String? = nil
-
-    var body: some View {
-        HStack(spacing: 7) {
-            if let systemImage {
-                Image(systemName: systemImage).font(.system(size: 11, weight: .semibold))
-            } else {
-                Circle().fill(color).frame(width: 7, height: 7)
-            }
-            Text(text)
-                .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
-        }
-        .foregroundStyle(Palette.text)
-        .padding(.horizontal, 13)
-        .padding(.vertical, 8)
-        .background(.ultraThinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.white.opacity(0.14), lineWidth: 1))
-        .shadow(color: .black.opacity(0.4), radius: 10, y: 4)
-    }
-}

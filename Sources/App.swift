@@ -9,26 +9,9 @@ struct OpenCodeApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(store)
-                .environmentObject(AppSettings())
                 .preferredColorScheme(.dark)
                 .tint(Palette.violet)
         }
-    }
-}
-
-// MARK: - Настройки отображения
-
-@MainActor
-final class AppSettings: ObservableObject {
-    private static let zoomKey = "web.zoom"
-
-    @Published var zoom: Double {
-        didSet { UserDefaults.standard.set(zoom, forKey: Self.zoomKey) }
-    }
-
-    init() {
-        let saved = UserDefaults.standard.double(forKey: Self.zoomKey)
-        zoom = saved > 0 ? saved : 1.0
     }
 }
 
@@ -36,28 +19,20 @@ final class AppSettings: ObservableObject {
 
 /// Корень приложения.
 ///
-/// Два способа работы:
-/// 1. `native` — свой чат: сессии, переписка, поток ответа, разрешения.
-/// 2. `web` — тот же интерфейс, что на компьютере: терминал, диффы, файлы.
-///
-/// Оба режима смотрят в один сервер, поэтому всё синхронизировано.
+/// Это самостоятельный клиент: список диалогов и чат. Никакого
+/// браузера внутри нет — все экраны нарисованы нативно.
 struct RootView: View {
     @EnvironmentObject private var store: ConnectionStore
     @StateObject private var chat = ChatStore()
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var setupDone: Bool
-    @State private var mode: Mode = .native
-    @State private var reloadToken = 0
-    @State private var state: WebState = .loading
     @State private var showSettings = false
     @State private var showLaunch: Bool
     @State private var debugOpenChat = false
     @State private var debugOpenSheet = false
     @State private var debugKeyboard = false
     @State private var launchFaded = false
-
-    enum Mode { case native, web }
 
     init() {
         let ready = ConnectionStore().connection.isComplete
@@ -70,11 +45,16 @@ struct RootView: View {
             Ink.void.ignoresSafeArea()
 
             if setupDone {
-                content
+                NativeRoot(
+                    chat: chat,
+                    onSettings: { showSettings = true },
+                    forceOpenChat: debugOpenChat,
+                    forceOpenSheet: debugOpenSheet,
+                    forceKeyboard: debugKeyboard
+                )
             } else {
                 SetupView {
                     setupDone = true
-                    reloadToken += 1
                     launchFaded = false
                     showLaunch = true
                     Task { await chat.start() }
@@ -105,7 +85,6 @@ struct RootView: View {
             guard setupDone else { return }
             #if DEBUG
             let screen = ProcessInfo.processInfo.environment["OC_SCREEN"] ?? ""
-            if screen == "web" { mode = .web }
             #endif
             await chat.start()
             #if DEBUG
@@ -179,135 +158,10 @@ struct RootView: View {
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(onApply: {
-                state = .loading
-                reloadToken += 1
                 launchFaded = false
                 showLaunch = true
                 Task { await chat.start() }
             })
-        }
-    }
-
-    // MARK: Режимы
-
-    private var content: some View {
-        ZStack {
-            // Родной чат. Не снимаем его с экрана, а прячем: так состояние
-            // и прокрутка сохраняются при возврате из веб-режима.
-            NativeRoot(
-                chat: chat,
-                onOpenWeb: {
-                    Haptic.tap()
-                    withAnimation(Motion.gentle) { mode = .web }
-                },
-                onSettings: { showSettings = true },
-                forceOpenChat: debugOpenChat,
-                forceOpenSheet: debugOpenSheet,
-                forceKeyboard: debugKeyboard
-            )
-            .opacity(mode == .native ? 1 : 0)
-            .allowsHitTesting(mode == .native)
-
-            // Веб-интерфейс создаётся сразу при запуске и грузится в фоне.
-            // Поэтому переключение «как на компьютере» происходит мгновенно,
-            // без экрана загрузки.
-            webMode
-                .opacity(mode == .web ? 1 : 0)
-                .allowsHitTesting(mode == .web)
-        }
-    }
-
-    private var webMode: some View {
-        VStack(spacing: 0) {
-            // Тонкая родная полоса: возврат в свой чат, настройки, состояние.
-            // Отдельная строка — чтобы не накрывать шапку интерфейса OpenCode.
-            HStack(spacing: 10) {
-                Button {
-                    Haptic.tap(.medium)
-                    withAnimation(Motion.gentle) { mode = .native }
-                    Task { await chat.refreshFromBackground() }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("Мой чат")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(Ink.primary)
-                    .padding(.horizontal, 12)
-                    .frame(height: 30)
-                    .background(Capsule().fill(Color.white.opacity(0.09)))
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-
-                if case let .failed(message) = state {
-                    Button {
-                        state = .loading
-                        reloadToken += 1
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "wifi.exclamationmark")
-                            Text(message)
-                                .lineLimit(1)
-                        }
-                        .font(.system(size: 11.5, weight: .medium))
-                        .foregroundStyle(Ink.coral)
-                        .padding(.horizontal, 10)
-                        .frame(height: 26)
-                        .background(Capsule().fill(Ink.coral.opacity(0.12)))
-                    }
-                    .buttonStyle(.plain)
-                } else if state == .loading {
-                    HStack(spacing: 6) {
-                        ProgressView().controlSize(.mini).tint(Ink.secondary)
-                        Text("Загрузка")
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(Ink.tertiary)
-                    }
-                }
-
-                Button {
-                    Haptic.tap()
-                    reloadToken += 1
-                } label: {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Ink.secondary)
-                        .frame(width: 30, height: 30)
-                        .background(Circle().fill(Color.white.opacity(0.07)))
-                }
-                .buttonStyle(.plain)
-
-                Button {
-                    Haptic.tap()
-                    showSettings = true
-                } label: {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Ink.secondary)
-                        .frame(width: 30, height: 30)
-                        .background(Circle().fill(Color.white.opacity(0.07)))
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(Ink.void)
-
-            ZStack(alignment: .top) {
-                if let url = store.connection.url {
-                    WebContainer(
-                        url: url,
-                        username: store.connection.username,
-                        password: store.connection.password,
-                        reloadToken: reloadToken,
-                        state: $state,
-                        onSettings: { showSettings = true }
-                    )
-                }
-            }
         }
     }
 }
@@ -316,7 +170,6 @@ struct RootView: View {
 
 struct NativeRoot: View {
     @ObservedObject var chat: ChatStore
-    var onOpenWeb: () -> Void
     var onSettings: () -> Void
     var forceOpenChat: Bool = false
     var forceOpenSheet: Bool = false
@@ -325,12 +178,10 @@ struct NativeRoot: View {
     @State private var showingChat: Bool
     @State private var didAutoOpen = false
 
-    init(chat: ChatStore, onOpenWeb: @escaping () -> Void,
-         onSettings: @escaping () -> Void,
+    init(chat: ChatStore, onSettings: @escaping () -> Void,
          forceOpenChat: Bool = false, forceOpenSheet: Bool = false,
          forceKeyboard: Bool = false) {
         self.chat = chat
-        self.onOpenWeb = onOpenWeb
         self.onSettings = onSettings
         self.forceOpenChat = forceOpenChat
         self.forceOpenSheet = forceOpenSheet
@@ -349,7 +200,6 @@ struct NativeRoot: View {
                             chat.close()
                         }
                     },
-                    onOpenWeb: onOpenWeb,
                     forceOpenSheet: forceOpenSheet,
                     forceKeyboard: forceKeyboard
                 )
@@ -364,11 +214,18 @@ struct NativeRoot: View {
                         withAnimation(Motion.gentle) { showingChat = true }
                         Task { await chat.open(session) }
                     },
-                    onNew: {
-                        Task { await chat.newSession() }
+                    onNew: { draft in
                         withAnimation(Motion.gentle) { showingChat = true }
+                        Task {
+                            // Новая сессия создаётся при первом сообщении,
+                            // поэтому черновик сначала открываем, потом шлём.
+                            await chat.newSession()
+                            if !draft.isEmpty {
+                                chat.draft = draft
+                                await chat.send()
+                            }
+                        }
                     },
-                    onOpenWeb: onOpenWeb,
                     onSettings: onSettings
                 )
                 .transition(.opacity)
@@ -383,144 +240,5 @@ struct NativeRoot: View {
                 Task { await chat.open(first) }
             }
         }
-    }
-}
-
-// MARK: - Контейнер с веб-интерфейсом
-
-struct WebContainer: View {
-    let url: URL
-    let username: String
-    let password: String
-    let reloadToken: Int
-    @Binding var state: WebState
-    let onSettings: () -> Void
-
-    @EnvironmentObject private var settings: AppSettings
-    @State private var showPanel = false
-    @State private var localReloads = 0
-
-    var body: some View {
-        ZStack(alignment: .top) {
-            WebView(url: url,
-                    username: username,
-                    password: password,
-                    zoom: settings.zoom,
-                    reloadToken: reloadToken + localReloads,
-                    onStateChange: { state = $0 })
-                // Клавиатуру не игнорируем, иначе она накрывает поле ввода.
-                // Верх не растягиваем: над интерфейсом есть своя полоса.
-
-
-            topOverlay
-
-            // Слева — узкая полоса: потяни вправо, чтобы открыть панель управления.
-            HStack {
-                ControlHandle { showPanel = true }
-                Spacer(minLength: 0)
-            }
-        }
-        .sheet(isPresented: $showPanel) {
-            ControlPanel(reload: { localReloads += 1 }, openSettings: {
-                showPanel = false
-                onSettings()
-            })
-        }
-    }
-
-    @ViewBuilder
-    private var topOverlay: some View {
-        switch state {
-        case .loading:
-            VStack(spacing: 10) {
-                StatusPill(text: "Загрузка", color: Palette.violet,
-                           systemImage: "arrow.triangle.2.circlepath")
-                LoadingLine()
-            }
-            .padding(.top, 2)
-            .transition(.opacity)
-
-        case let .failed(message):
-            Button {
-                state = .loading
-            } label: {
-                StatusPill(text: "Нет связи · \(message)", color: Palette.danger,
-                           systemImage: "wifi.exclamationmark")
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 6)
-
-        case .unauthorized:
-            Button(action: onSettings) {
-                StatusPill(text: "Неверный пароль · открыть настройки",
-                           color: Palette.danger, systemImage: "lock.slash")
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 6)
-
-        case .ready:
-            EmptyView()
-        }
-    }
-}
-
-struct ControlHandle: View {
-    let onOpen: () -> Void
-    @State private var hintVisible = false
-
-    var body: some View {
-        ZStack(alignment: .leading) {
-            Color.clear
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 18)
-                        .onEnded { value in
-                            if value.translation.width > 50, abs(value.translation.height) < 90 {
-                                UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-                                onOpen()
-                            }
-                        }
-                )
-                .frame(width: 22)
-
-            if hintVisible {
-                StatusPill(text: "Потяни вправо → настройки", color: Palette.violet,
-                           systemImage: "slider.horizontal.3")
-                    .padding(.leading, 26)
-                    .padding(.top, 90)
-                    .allowsHitTesting(false)
-                    .transition(.opacity)
-            }
-        }
-        .frame(width: 22)
-        .task {
-            guard !UserDefaults.standard.bool(forKey: "hint.shown") else { return }
-            UserDefaults.standard.set(true, forKey: "hint.shown")
-            withAnimation(.easeIn(duration: 0.35)) { hintVisible = true }
-            try? await Task.sleep(nanoseconds: 4_500_000_000)
-            withAnimation(.easeOut(duration: 0.4)) { hintVisible = false }
-        }
-    }
-}
-
-/// Тонкая полоса прогресса под верхним краем.
-struct LoadingLine: View {
-    @State private var phase: CGFloat = -0.4
-
-    var body: some View {
-        GeometryReader { geo in
-            Capsule()
-                .fill(Palette.brand)
-                .frame(width: geo.size.width * 0.38, height: 2)
-                .offset(x: geo.size.width * phase)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 1.1).repeatForever(autoreverses: false)) {
-                        phase = 1.05
-                    }
-                }
-        }
-        .frame(height: 2)
-        .frame(maxWidth: .infinity)
-        .clipped()
     }
 }

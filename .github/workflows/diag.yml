@@ -24,9 +24,8 @@ jobs:
       - name: Build
         run: |
           set -euo pipefail
-          python3 build_css.py
           xcodegen generate --spec project.yml
-          xcodebuild -project OpenCodeWeb.xcodeproj -scheme OpenCodeWeb \
+          xcodebuild -project OpenCode.xcodeproj -scheme OpenCode \
             -configuration Debug -sdk iphonesimulator \
             -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/dd" \

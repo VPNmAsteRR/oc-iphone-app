@@ -1,4 +1,4 @@
-name: Build OpenCode Web IPA
+name: Build OpenCode IPA
 
 on:
   workflow_dispatch:
@@ -13,8 +13,8 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 40
     env:
-      SCHEME: OpenCodeWeb
-      PROJECT: OpenCodeWeb.xcodeproj
+      SCHEME: OpenCode
+      PROJECT: OpenCode.xcodeproj
       APP_NAME: OpenCode
 
     steps:
@@ -36,11 +36,6 @@ jobs:
           unzip -q "$RUNNER_TEMP/xg.zip" -d "$RUNNER_TEMP/xgu"
           bash "$RUNNER_TEMP/xgu/xcodegen/install.sh" "$P"
           echo "$P/bin" >> "$GITHUB_PATH"
-
-      - name: Bake shell styles
-        run: |
-          set -euo pipefail
-          python3 build_css.py
 
       - name: Generate project
         run: |
@@ -102,8 +97,9 @@ jobs:
           tag_name: app-${{ github.run_number }}
           name: OpenCode iPhone (build ${{ github.run_number }})
           body: |
-            Родной чат OpenCode: те же сессии, что на компьютере, живой поток ответа,
-            разрешения и переключение в режим «как на компьютере» (терминал, диффы, файлы).
+            Полностью нативное приложение: список диалогов, чат с живым потоком
+            ответа, размышления, инструменты, разрешения, выбор модели и режима
+            работы, удаление сессии. Без встроенного браузера.
           files: ${{ env.IPA_PATH }}
           make_latest: true
           fail_on_unmatched_files: true

@@ -5,7 +5,6 @@ import SwiftUI
 /// Карточка сессии: чем работает, где лежит, что можно сделать.
 struct SessionSheet: View {
     @ObservedObject var store: ChatStore
-    var onOpenWeb: () -> Void
     var onDeleted: () -> Void
 
     @Environment(\.dismiss) private var dismiss
@@ -181,15 +180,6 @@ struct SessionSheet: View {
 
     private func actions(_ session: Session) -> some View {
         VStack(spacing: 9) {
-            Button {
-                Haptic.tap()
-                dismiss()
-                onOpenWeb()
-            } label: {
-                Label("Открыть как на компьютере", systemImage: "display")
-            }
-            .buttonStyle(QuietButtonStyle())
-
             Button {
                 Haptic.tap(.medium)
                 if confirmingDelete {

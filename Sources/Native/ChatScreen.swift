@@ -6,7 +6,6 @@ import SwiftUI
 struct ChatScreen: View {
     @ObservedObject var store: ChatStore
     var onBack: () -> Void
-    var onOpenWeb: () -> Void
     var forceOpenSheet: Bool = false
     var forceKeyboard: Bool = false
 
@@ -51,7 +50,6 @@ struct ChatScreen: View {
         .sheet(isPresented: $showInfo) {
             SessionSheet(
                 store: store,
-                onOpenWeb: onOpenWeb,
                 onDeleted: onBack
             )
         }
@@ -74,39 +72,32 @@ struct ChatScreen: View {
             }
             .glass(radius: 20, interactive: true)
 
-            Button {
-                Haptic.tap()
-                composerFocused = false
-                showInfo = true
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(store.currentSession?.displayTitle ?? "Сессия")
-                        .font(.system(size: 15.5, weight: .semibold))
-                        .foregroundStyle(Ink.primary)
-                        .lineLimit(1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(store.currentSession?.displayTitle ?? "Сессия")
+                    .font(.system(size: 15.5, weight: .semibold))
+                    .foregroundStyle(Ink.primary)
+                    .lineLimit(1)
 
-                    HStack(spacing: 5) {
-                        Circle()
-                            .fill(store.isWorking ? Ink.amber : Ink.mint)
-                            .frame(width: 5, height: 5)
-                        Text(store.isWorking ? "работает" : (store.currentSession?.projectName ?? "проект"))
-                            .font(.system(size: 11.5))
-                            .foregroundStyle(Ink.tertiary)
-                            .lineLimit(1)
-                    }
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(store.isWorking ? Ink.amber : Ink.mint)
+                        .frame(width: 5, height: 5)
+                    Text(store.isWorking ? "работает" : (store.currentSession?.projectName ?? "проект"))
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(Ink.tertiary)
+                        .lineLimit(1)
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
 
             Spacer(minLength: 4)
 
             Button {
                 Haptic.tap()
-                onOpenWeb()
+                composerFocused = false
+                showInfo = true
             } label: {
-                Image(systemName: "display")
-                    .font(.system(size: 15, weight: .medium))
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(Ink.secondary)
                     .frame(width: 40, height: 40)
                     .contentShape(Circle())
@@ -312,6 +303,52 @@ struct ChatScreen: View {
                 .transition(.opacity)
             }
 
+            // Строка управления, как в Gemini: модель и режим работы
+            // выбираются прямо из поля ввода.
+            HStack(spacing: 8) {
+                Button {
+                    Haptic.tap()
+                    composerFocused = false
+                    showInfo = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 10.5, weight: .semibold))
+                        Text(modelTitle)
+                            .font(.system(size: 12.5, weight: .medium))
+                            .lineLimit(1)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundStyle(Ink.secondary)
+                    .padding(.horizontal, 11)
+                    .frame(height: 30)
+                    .background(Capsule().fill(Color.white.opacity(0.06)))
+                }
+                .buttonStyle(.plain)
+
+                if let agent = agentTitle {
+                    Button {
+                        Haptic.tap()
+                        composerFocused = false
+                        showInfo = true
+                    } label: {
+                        Text(agent)
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundStyle(Ink.tertiary)
+                            .lineLimit(1)
+                            .padding(.horizontal, 11)
+                            .frame(height: 30)
+                            .background(Capsule().fill(Color.white.opacity(0.05)))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 8)
+
             HStack(alignment: .bottom, spacing: 10) {
                 TextField("Спроси что угодно", text: $store.draft, axis: .vertical)
                     .textFieldStyle(.plain)
@@ -373,6 +410,23 @@ struct ChatScreen: View {
 
     private var canSend: Bool {
         !store.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Название модели текущей сессии — короткой строкой, как в Gemini.
+    private var modelTitle: String {
+        guard let model = store.currentSession?.model else { return "Модель" }
+        let name = store.models.first {
+            $0.providerID == model.providerID && ($0.modelID ?? $0.id) == model.id
+        }?.title ?? model.id
+        // Убираем длинное имя провайдера из подписи: на телефоне
+        // важнее сама модель, а не кто её обслуживает.
+        let short = name.split(separator: "/").last.map(String.init) ?? name
+        return short.count > 24 ? String(short.prefix(23)) + "…" : short
+    }
+
+    private var agentTitle: String? {
+        guard let id = store.currentSession?.agent else { return nil }
+        return store.agents.first { $0.id == id }?.title ?? id
     }
 
 }
@@ -526,14 +580,6 @@ struct ReasoningCard: View {
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(Ink.orchid.opacity(0.05))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .strokeBorder(Ink.orchid.opacity(0.12), lineWidth: 1)
-        )
     }
 }
 
@@ -555,8 +601,8 @@ struct ToolCard: View {
                     statusIcon
                     VStack(alignment: .leading, spacing: 2) {
                         Text(part.displayName)
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(Ink.primary.opacity(0.9))
+                            .font(.system(size: 12.5, weight: .medium))
+                            .foregroundStyle(Ink.secondary)
                         if let summary = state?.summary {
                             Text(summary)
                                 .font(.system(size: 11.5, design: .monospaced))
@@ -612,14 +658,6 @@ struct ToolCard: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .fill(Ink.raised.opacity(0.45))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 13, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.05), lineWidth: 1)
-        )
     }
 
     @ViewBuilder

@@ -1,0 +1,71 @@
+name: Diag
+
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          python3 build_css.py
+          xcodegen generate --spec project.yml
+          xcodebuild -project OpenCodeWeb.xcodeproj -scheme OpenCodeWeb \
+            -configuration Debug -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" EXPANDED_CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Diagnose keyboard
+        env:
+          OC_PASSWORD: ${{ secrets.OC_PASSWORD }}
+          OC_URL: ${{ secrets.OC_URL }}
+        run: |
+          set -uo pipefail
+          APP=$(find "$RUNNER_TEMP/dd/Build/Products" -name "OpenCode.app" -maxdepth 3 | head -1)
+          echo "app: $APP"
+          mkdir -p shots
+
+          xcrun simctl list devicetypes >/dev/null
+          if ! xcrun simctl list devices available | grep -q "iPhone 15 Plus ("; then
+            TYPE=$(xcrun simctl list devicetypes | grep -i "iPhone 15 Plus" | grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | head -1)
+            RUNTIME=$(xcrun simctl list runtimes | grep -oE "com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+" | tail -1)
+            xcrun simctl create "iPhone 15 Plus" "$TYPE" "$RUNTIME" || true
+          fi
+          DEVICE="iPhone 15 Plus"
+          xcrun simctl boot "$DEVICE" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEVICE" -b 2>/dev/null || true
+          xcrun simctl install "$DEVICE" "$APP"
+
+          xcrun simctl spawn "$DEVICE" log stream --level debug \
+            --predicate 'process == "OpenCode"' > "$RUNNER_TEMP/app.log" 2>&1 &
+          STREAM=$!
+
+          SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
+          SIMCTL_CHILD_OC_URL="${OC_URL:-https://oc.13.143.161.69.sslip.io:8443}" \
+          SIMCTL_CHILD_OC_USER=opencode \
+          SIMCTL_CHILD_OC_SCREEN=keyboard \
+          xcrun simctl launch "$DEVICE" dev.opencode2.mobile || true
+
+          for t in 3 6 10 14 18 24; do
+            sleep 3
+            xcrun simctl io "$DEVICE" screenshot "shots/kb-$t.png" || true
+          done
+
+          kill $STREAM 2>/dev/null || true
+          cp "$RUNNER_TEMP/app.log" shots/app.log || true
+          ls -1 ~/Library/Logs/DiagnosticReports 2>/dev/null | tail -5 || true
+          cp ~/Library/Logs/DiagnosticReports/*OpenCode* shots/ 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: diag
+          path: shots

@@ -180,53 +180,55 @@ struct SessionListScreen: View {
     // MARK: Нижняя панель
 
     private var bottomBar: some View {
-        HStack(spacing: 10) {
-            Button {
-                Haptic.tap(.medium)
-                onOpenWeb()
-            } label: {
-                Label("Как на компьютере", systemImage: "display")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(Ink.secondary)
-                    .padding(.horizontal, 16)
-                    .frame(height: 48)
-            }
-            .glass(radius: 24, interactive: true)
+        ZStack(alignment: .bottom) {
+            // Фон во всю ширину и до самого низа экрана. Color сам
+            // растягивается на безопасные зоны, поэтому рамки не видно.
+            Ink.void
+                .ignoresSafeArea(edges: [.bottom, .horizontal])
 
-            Button {
-                Haptic.tap(.medium)
-                onNew()
-            } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .bold))
-                    Text("Новая")
-                        .font(.system(size: 15, weight: .semibold))
+            // Мягкий переход: карточки растворяются над панелью.
+            LinearGradient(
+                colors: [.clear, Ink.void.opacity(0.85), Ink.void],
+                startPoint: .top, endPoint: .bottom
+            )
+            .frame(height: 64)
+            .offset(y: -52)
+            .allowsHitTesting(false)
+
+            HStack(spacing: 10) {
+                Button {
+                    Haptic.tap(.medium)
+                    onOpenWeb()
+                } label: {
+                    Label("Как на компьютере", systemImage: "display")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Ink.secondary)
+                        .padding(.horizontal, 16)
+                        .frame(height: 48)
                 }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 22)
-                .frame(height: 48)
-                .background(Capsule().fill(Ink.aura))
-                .shadow(color: Ink.indigo.opacity(0.55), radius: 18, y: 8)
+                .glass(radius: 24, interactive: true)
+
+                Button {
+                    Haptic.tap(.medium)
+                    onNew()
+                } label: {
+                    HStack(spacing: 7) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 15, weight: .bold))
+                        Text("Новая")
+                            .font(.system(size: 15, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 22)
+                    .frame(height: 48)
+                    .background(Capsule().fill(Ink.aura))
+                    .shadow(color: Ink.indigo.opacity(0.55), radius: 18, y: 8)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 10)
-        .padding(.bottom, 8)
-        // Плавное растворение карточек под панелью, но сама панель
-        // стоит строго над домашним индикатором.
-        .background(alignment: .top) {
-            LinearGradient(colors: [.clear, Ink.void.opacity(0.92), Ink.void],
-                           startPoint: .top, endPoint: .bottom)
-                .frame(height: 96)
-                .offset(y: -18)
-                .allowsHitTesting(false)
-        }
-        .background {
-            Rectangle()
-                .fill(Ink.void)
-                .ignoresSafeArea(edges: .bottom)
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
         }
     }
 

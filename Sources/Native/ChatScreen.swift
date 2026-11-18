@@ -20,12 +20,16 @@ struct ChatScreen: View {
 
             VStack(spacing: 0) {
                 header
-                // Поле ввода живёт в нижней безопасной зоне: над домашним
-                // индикатором и строго над клавиатурой, когда она открыта.
                 transcript
-                    .safeAreaInset(edge: .bottom, spacing: 0) {
-                        composerArea
-                    }
+            }
+            // Поле ввода живёт в нижней безопасной зоне: над домашним
+            // индикатором и строго над клавиатурой, когда она открыта.
+            //
+            // Отступ навешивается на весь экран, а не на ленту: лента
+            // внутри — GeometryReader, и `safeAreaInset` на нём при
+            // появлении клавиатуры запускал цикл раскладки (чёрный экран).
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                composerArea
             }
         }
         .onAppear {

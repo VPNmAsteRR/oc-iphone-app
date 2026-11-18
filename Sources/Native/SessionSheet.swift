@@ -22,6 +22,7 @@ struct SessionSheet: View {
                     if let session = store.currentSession {
                         titleBlock(session)
                         infoBlock(session)
+                        agentBlock(session)
                         modelBlock(session)
                         actions(session)
                     }
@@ -65,6 +66,59 @@ struct SessionSheet: View {
             row("Папка", session.location?.directory ?? "—", icon: "folder")
         }
         .glass(radius: 20)
+    }
+
+    private func agentBlock(_ session: Session) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Режим работы")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Ink.tertiary)
+                .textCase(.uppercase)
+                .padding(.leading, 4)
+
+            VStack(spacing: 7) {
+                ForEach(store.agents, id: \.id) { agent in
+                    let selected = (session.agent ?? "build") == agent.id
+                    Button {
+                        Haptic.select()
+                        Task { await store.select(agent: agent) }
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 11) {
+                            Image(systemName: selected ? "checkmark.circle.fill" : "circle")
+                                .font(.system(size: 15))
+                                .foregroundStyle(selected ? Ink.mint : Ink.tertiary.opacity(0.6))
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(agent.title)
+                                    .font(.system(size: 14.5, weight: .medium))
+                                    .foregroundStyle(Ink.primary)
+                                if let description = agent.description, !description.isEmpty {
+                                    Text(description)
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Ink.tertiary)
+                                        .lineLimit(2)
+                                }
+                            }
+                            Spacer()
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .fill(selected ? Ink.mint.opacity(0.10) : Ink.raised.opacity(0.6))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                                .strokeBorder(selected ? Ink.mint.opacity(0.3) : Color.white.opacity(0.06),
+                                              lineWidth: 1)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.top, 6)
     }
 
     private func modelBlock(_ session: Session) -> some View {

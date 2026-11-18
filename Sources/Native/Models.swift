@@ -261,8 +261,13 @@ struct PermissionRequest: Decodable, Identifiable {
 
 struct AgentInfo: Decodable, Identifiable {
     let id: String
-    let name: String
+    let name: String?
     let description: String?
+
+    var title: String {
+        if let name, !name.isEmpty { return name }
+        return id.prefix(1).uppercased() + id.dropFirst()
+    }
 }
 
 struct ModelInfo: Decodable {

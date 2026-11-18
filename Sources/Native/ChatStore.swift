@@ -226,6 +226,19 @@ final class ChatStore: ObservableObject {
         await loadSessions()
     }
 
+    /// Сменить режим работы (агента).
+    func select(agent: AgentInfo) async {
+        guard let session = currentSession, !session.isDraft else { return }
+        struct Body: Encodable { let agent: String }
+        _ = try? await api.send("POST",
+                                "/api/session/\(session.id)/agent",
+                                body: Body(agent: agent.id))
+        await loadSessions()
+        if let refreshed = sessions.first(where: { $0.id == session.id }) {
+            currentSession = refreshed
+        }
+    }
+
     /// Удалить сессию.
     func delete(_ session: Session) async {
         guard !session.isDraft else { return }

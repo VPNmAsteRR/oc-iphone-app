@@ -21,6 +21,7 @@ struct SessionListScreen: View {
             ScrollView {
                 LazyVStack(spacing: 0, pinnedViews: []) {
                     header
+                    connectionBanner
                     startBlock
                     searchField
                     content
@@ -71,6 +72,83 @@ struct SessionListScreen: View {
         .padding(.bottom, 18)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : -10)
+    }
+
+    // MARK: Состояние связи
+
+    /// Если связь пропала после запуска, не показываем пустой экран:
+    /// объясняем, что случилось, и даём кнопку «Повторить».
+    @ViewBuilder
+    private var connectionBanner: some View {
+        switch store.phase {
+        case .ready, .connecting:
+            EmptyView()
+
+        case .unauthorized:
+            bannerRow(
+                icon: "lock.slash",
+                title: "Нужен пароль",
+                subtitle: "Сервер не принял логин или пароль.",
+                action: "Настройки",
+                tint: Ink.coral
+            ) { onSettings() }
+
+        case let .failed(message):
+            bannerRow(
+                icon: "wifi.exclamationmark",
+                title: "Нет связи с сервером",
+                subtitle: message,
+                action: "Повторить",
+                tint: Ink.amber
+            ) { store.restart() }
+        }
+    }
+
+    private func bannerRow(icon: String, title: String, subtitle: String,
+                           action: String, tint: Color,
+                           perform: @escaping () -> Void) -> some View {
+        HStack(alignment: .top, spacing: 11) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(tint)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13.5, weight: .semibold))
+                    .foregroundStyle(Ink.primary)
+                Text(subtitle)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Ink.tertiary)
+                    .lineLimit(2)
+            }
+
+            Spacer(minLength: 8)
+
+            Button {
+                Haptic.tap()
+                perform()
+            } label: {
+                Text(action)
+                    .font(.system(size: 12.5, weight: .semibold))
+                    .foregroundStyle(tint)
+                    .padding(.horizontal, 12)
+                    .frame(height: 30)
+                    .background(Capsule().fill(tint.opacity(0.12)))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Ink.raised.opacity(0.75))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(tint.opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.bottom, 14)
     }
 
     // MARK: Быстрый старт
@@ -269,41 +347,40 @@ struct SessionListScreen: View {
 
     // MARK: Нижняя панель
 
-    /// Одно действие: новый диалог. Фон тянется до краёв экрана,
-    /// карточки над панелью мягко растворяются.
+    /// Одно действие: новый диалог. Фон панели доходит до низа
+    /// экрана, но сама панель занимает только свою высоту: если
+    /// положить сюда ZStack с Color, он растянется на весь экран
+    /// и закроет список.
     private var newChatBar: some View {
-        ZStack(alignment: .bottom) {
-            Ink.void
-                .ignoresSafeArea(edges: [.bottom, .horizontal])
-
-            LinearGradient(
-                colors: [.clear, Ink.void.opacity(0.85), Ink.void],
-                startPoint: .top, endPoint: .bottom
-            )
-            .frame(height: 64)
-            .offset(y: -52)
-            .allowsHitTesting(false)
-
-            Button {
-                Haptic.tap(.medium)
-                onNew("")
-            } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .bold))
-                    Text("Новый диалог")
-                        .font(.system(size: 15.5, weight: .semibold))
-                }
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 50)
-                .background(Capsule().fill(Ink.aura))
-                .shadow(color: Ink.indigo.opacity(0.5), radius: 18, y: 8)
+        Button {
+            Haptic.tap(.medium)
+            onNew("")
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "plus")
+                    .font(.system(size: 15, weight: .bold))
+                Text("Новый диалог")
+                    .font(.system(size: 15.5, weight: .semibold))
             }
-            .buttonStyle(.plain)
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            .padding(.bottom, 8)
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(Capsule().fill(Ink.aura))
+            .shadow(color: Ink.indigo.opacity(0.5), radius: 18, y: 8)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 20)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(alignment: .top) {
+            LinearGradient(colors: [.clear, Ink.void],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 40)
+                .offset(y: -34)
+                .allowsHitTesting(false)
+        }
+        .background {
+            Ink.void.ignoresSafeArea(edges: .bottom)
         }
     }
 

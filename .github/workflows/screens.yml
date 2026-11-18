@@ -49,16 +49,26 @@ jobs:
           echo "app: $APP"
           mkdir -p shots
 
-          # Три размера с разной геометрией выреза:
-          #  - iPhone 16e      — маленький экран, есть островок
-          #  - iPhone 17 Pro   — обычный
-          #  - iPhone 17 Pro Max — самый крупный, легко заметить перекосы
-          DEVICES=(
-            "iPhone 16e"
-            "iPhone 17 Pro"
-            "iPhone 17 Pro Max"
-          )
-          SLUGS=("16e" "17pro" "17promax")
+          # Ровно тот размер, что нужен: iPhone 15 Plus (430x932, островок).
+          DEVICE_NAME="iPhone 15 Plus"
+          SLUG="15plus"
+
+          xcrun simctl list devicetypes | grep -i "iPhone 15 Plus" || true
+          if ! xcrun simctl list devices available | grep -q "$DEVICE_NAME ("; then
+            TYPE=$(xcrun simctl list devicetypes | grep -i "iPhone 15 Plus" | grep -oE "com\.apple\.CoreSimulator\.SimDeviceType\.[A-Za-z0-9-]+" | head -1)
+            RUNTIME=$(xcrun simctl list runtimes | grep -oE "com\.apple\.CoreSimulator\.SimRuntime\.iOS-[0-9-]+" | tail -1)
+            echo "создаю $DEVICE_NAME из $TYPE на $RUNTIME"
+            xcrun simctl create "$DEVICE_NAME" "$TYPE" "$RUNTIME" || true
+          fi
+          xcrun simctl list devices | grep -i "15 Plus" || true
+
+          xcrun simctl boot "$DEVICE_NAME" 2>/dev/null || true
+          xcrun simctl bootstatus "$DEVICE_NAME" -b 2>/dev/null || true
+          xcrun simctl install "$DEVICE_NAME" "$APP"
+
+          # Реальные размеры экрана и безопасных зон — чтобы проверять факты,
+          # а не догадки.
+          xcrun simctl io "$DEVICE_NAME" screenshot "shots/${SLUG}-0-raw.png" || true
 
           shoot () {
             local device="$1"; local name="$2"; local extra="$3"; shift 3
@@ -77,34 +87,21 @@ jobs:
             done
           }
 
-          for index in "${!DEVICES[@]}"; do
-            device="${DEVICES[$index]}"
-            slug="${SLUGS[$index]}"
+          shoot "$DEVICE_NAME" "${SLUG}-a-launch" "launch" 6
+          shoot "$DEVICE_NAME" "${SLUG}-b-sessions" "" 10
+          shoot "$DEVICE_NAME" "${SLUG}-c-empty" "empty" 20
+          shoot "$DEVICE_NAME" "${SLUG}-d-web" "web" 24
+          shoot "$DEVICE_NAME" "${SLUG}-f-keyboard" "keyboard" 26
 
-            echo "=== $device"
-            xcrun simctl boot "$device" 2>/dev/null || true
-            xcrun simctl bootstatus "$device" -b 2>/dev/null || true
-            xcrun simctl install "$device" "$APP"
-
-            shoot "$device" "${slug}-a-launch" "launch" 6
-            shoot "$device" "${slug}-b-sessions" "" 10
-            shoot "$device" "${slug}-c-empty" "empty" 20
-            shoot "$device" "${slug}-d-web" "web" 24
-            # Клавиатура открыта: поле ввода не должно оказаться под ней.
-            shoot "$device" "${slug}-f-keyboard" "keyboard" 26
-
-            # Без связи: должны быть понятные кнопки, а не бесконечная загрузка.
-            xcrun simctl terminate "$device" dev.opencode2.mobile 2>/dev/null || true
-            sleep 1
-            SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
-            SIMCTL_CHILD_OC_URL="https://127.0.0.1:9" \
-            SIMCTL_CHILD_OC_USER=opencode \
-            xcrun simctl launch "$device" dev.opencode2.mobile >/dev/null || true
-            sleep 14
-            xcrun simctl io "$device" screenshot "shots/${slug}-e-offline.png" || true
-
-            xcrun simctl shutdown "$device" 2>/dev/null || true
-          done
+          # Без связи: понятные кнопки вместо бесконечной загрузки.
+          xcrun simctl terminate "$DEVICE_NAME" dev.opencode2.mobile 2>/dev/null || true
+          sleep 1
+          SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
+          SIMCTL_CHILD_OC_URL="https://127.0.0.1:9" \
+          SIMCTL_CHILD_OC_USER=opencode \
+          xcrun simctl launch "$DEVICE_NAME" dev.opencode2.mobile >/dev/null || true
+          sleep 14
+          xcrun simctl io "$DEVICE_NAME" screenshot "shots/${SLUG}-e-offline.png" || true
 
           ls -lh shots
 

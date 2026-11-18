@@ -26,20 +26,22 @@ struct ChatScreen: View {
         .onAppear {
             withAnimation(Motion.gentle) { appeared = true }
         }
-        .onAppear {
-            if forceOpenSheet {
-                Task {
-                    try? await Task.sleep(nanoseconds: 1_200_000_000)
-                    showInfo = true
-                }
-            }
-        }
+        .onAppear { openSheetIfNeeded() }
+        .onChange(of: forceOpenSheet) { _ in openSheetIfNeeded() }
         .sheet(isPresented: $showInfo) {
             SessionSheet(
                 store: store,
                 onOpenWeb: onOpenWeb,
                 onDeleted: onBack
             )
+        }
+    }
+
+    private func openSheetIfNeeded() {
+        guard forceOpenSheet else { return }
+        Task {
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            showInfo = true
         }
     }
 

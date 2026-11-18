@@ -123,6 +123,11 @@ struct RootView: View {
                     debugOpenSheet = true
                 }
             }
+            if screen == "empty" {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                await chat.newSession()
+                debugOpenChat = true
+            }
             if screen == "new" {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 await chat.newSession()

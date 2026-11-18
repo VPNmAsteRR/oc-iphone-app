@@ -337,6 +337,15 @@ struct MessageRow: View {
                     RoundedRectangle(cornerRadius: 20, style: .continuous)
                         .strokeBorder(Color.white.opacity(0.07), lineWidth: 1)
                 )
+                .textSelection(.enabled)
+                .contextMenu {
+                    Button {
+                        UIPasteboard.general.string = message.userText
+                        Haptic.success()
+                    } label: {
+                        Label("Скопировать", systemImage: "doc.on.doc")
+                    }
+                }
         }
     }
 
@@ -353,6 +362,17 @@ struct MessageRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .contextMenu {
+            Button {
+                let text = (message.content ?? [])
+                    .compactMap { $0.isText ? $0.text : nil }
+                    .joined(separator: "\n\n")
+                UIPasteboard.general.string = text
+                Haptic.success()
+            } label: {
+                Label("Скопировать ответ", systemImage: "doc.on.doc")
+            }
+        }
     }
 }
 

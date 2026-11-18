@@ -131,10 +131,17 @@ struct SessionListScreen: View {
 
             VStack(spacing: 8) {
                 ForEach(group.sessions) { session in
-                    SessionRow(session: session) {
-                        Haptic.select()
-                        onOpen(session)
-                    }
+                    SessionRow(
+                        session: session,
+                        action: {
+                            Haptic.select()
+                            onOpen(session)
+                        },
+                        onDelete: {
+                            Task { await store.delete(session) }
+                        },
+                        onOpenWeb: onOpenWeb
+                    )
                 }
             }
             .padding(.horizontal, 16)
@@ -278,6 +285,8 @@ struct SessionGroup: Identifiable {
 struct SessionRow: View {
     let session: Session
     var action: () -> Void
+    var onDelete: () -> Void = {}
+    var onOpenWeb: () -> Void = {}
 
     @State private var pressed = false
 
@@ -321,6 +330,20 @@ struct SessionRow: View {
             .scaleEffect(pressed ? 0.985 : 1)
         }
         .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                Haptic.tap()
+                onOpenWeb()
+            } label: {
+                Label("Открыть как на компьютере", systemImage: "display")
+            }
+            Button(role: .destructive) {
+                Haptic.tap(.medium)
+                onDelete()
+            } label: {
+                Label("Удалить", systemImage: "trash")
+            }
+        }
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in

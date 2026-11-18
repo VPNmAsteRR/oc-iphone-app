@@ -53,11 +53,29 @@ struct WebView: UIViewRepresentable {
             if (style.textContent !== CSS) {
               style.textContent = CSS;
             }
-            var parent = document.body || document.documentElement;
-            if (!parent) return;
-            if (style.parentNode !== parent || parent.lastElementChild !== style) {
-              parent.appendChild(style);   // appendChild переносит в конец
+
+            // Держим таблицу в <body>, но переставляем только если её
+            // реально обогнали чужие стили. Иначе каждый тост или окно
+            // заставляли бы браузер заново разбирать всю таблицу.
+            var body = document.body;
+            if (!body) {
+              if (style.parentNode !== document.documentElement) {
+                document.documentElement.appendChild(style);
+              }
+              return;
             }
+            if (style.parentNode !== body) {
+              body.appendChild(style);
+              return;
+            }
+            var later = false;
+            var nodes = body.children;
+            for (var i = nodes.length - 1; i >= 0; i--) {
+              var node = nodes[i];
+              if (node === style) break;
+              if (node.tagName === 'STYLE' || node.tagName === 'LINK') { later = true; break; }
+            }
+            if (later) body.appendChild(style);
           }
 
           apply();

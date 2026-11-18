@@ -163,6 +163,12 @@ struct ChatScreen: View {
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)
             .modifier(BottomAnchor())
+            .refreshable {
+                Haptic.tap()
+                if let id = store.currentSession?.id {
+                    await store.loadMessages(for: id)
+                }
+            }
             .onChange(of: store.streamingText) { _ in
                 withAnimation(.easeOut(duration: 0.18)) {
                     proxy.scrollTo("bottom", anchor: .bottom)

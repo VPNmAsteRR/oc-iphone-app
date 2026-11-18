@@ -155,23 +155,28 @@ struct RootView: View {
 
     // MARK: Режимы
 
-    @ViewBuilder
     private var content: some View {
-        switch mode {
-        case .native:
+        ZStack {
+            // Родной чат. Не снимаем его с экрана, а прячем: так состояние
+            // и прокрутка сохраняются при возврате из веб-режима.
             NativeRoot(
                 chat: chat,
                 onOpenWeb: {
+                    Haptic.tap()
                     withAnimation(Motion.gentle) { mode = .web }
                 },
                 onSettings: { showSettings = true },
                 forceOpenChat: debugOpenChat
             )
-            .transition(.opacity)
+            .opacity(mode == .native ? 1 : 0)
+            .allowsHitTesting(mode == .native)
 
-        case .web:
+            // Веб-интерфейс создаётся сразу при запуске и грузится в фоне.
+            // Поэтому переключение «как на компьютере» происходит мгновенно,
+            // без экрана загрузки.
             webMode
-                .transition(.opacity)
+                .opacity(mode == .web ? 1 : 0)
+                .allowsHitTesting(mode == .web)
         }
     }
 

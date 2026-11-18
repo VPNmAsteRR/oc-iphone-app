@@ -266,7 +266,26 @@ struct AgentInfo: Decodable, Identifiable {
 
     var title: String {
         if let name, !name.isEmpty { return name }
-        return id.prefix(1).uppercased() + id.dropFirst()
+        switch id {
+        case "build": return "Build"
+        case "general": return "General"
+        case "explore": return "Explore"
+        case "plan": return "Plan"
+        default: return id.prefix(1).uppercased() + id.dropFirst()
+        }
+    }
+
+    /// Понятное описание вместо английского из сервера.
+    var subtitle: String {
+        switch id {
+        case "build": return "Пишет код и меняет файлы"
+        case "general": return "Разные задачи: поиск, разбор, решения"
+        case "explore": return "Быстро изучает проект и находит нужное"
+        case "plan": return "Продумывает план, ничего не меняя"
+        default:
+            let text = (description ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            return text.isEmpty ? "Режим работы" : text
+        }
     }
 }
 

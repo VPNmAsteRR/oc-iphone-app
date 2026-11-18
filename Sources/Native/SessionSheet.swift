@@ -92,12 +92,11 @@ struct SessionSheet: View {
                                 Text(agent.title)
                                     .font(.system(size: 14.5, weight: .medium))
                                     .foregroundStyle(Ink.primary)
-                                if let description = agent.description, !description.isEmpty {
-                                    Text(description)
-                                        .font(.system(size: 11))
-                                        .foregroundStyle(Ink.tertiary)
-                                        .lineLimit(2)
-                                }
+                                Text(agent.subtitle)
+                                    .font(.system(size: 11.5))
+                                    .foregroundStyle(Ink.tertiary)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
                             }
                             Spacer()
                         }

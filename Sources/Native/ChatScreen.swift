@@ -7,6 +7,7 @@ struct ChatScreen: View {
     @ObservedObject var store: ChatStore
     var onBack: () -> Void
     var onOpenWeb: () -> Void
+    var forceOpenSheet: Bool = false
 
     @State private var appeared = false
     @FocusState private var composerFocused: Bool
@@ -24,6 +25,14 @@ struct ChatScreen: View {
         }
         .onAppear {
             withAnimation(Motion.gentle) { appeared = true }
+        }
+        .onAppear {
+            if forceOpenSheet {
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_200_000_000)
+                    showInfo = true
+                }
+            }
         }
         .sheet(isPresented: $showInfo) {
             SessionSheet(

@@ -53,6 +53,7 @@ struct RootView: View {
     @State private var showSettings = false
     @State private var showLaunch: Bool
     @State private var debugOpenChat = false
+    @State private var debugOpenSheet = false
     @State private var launchFaded = false
 
     enum Mode { case native, web }
@@ -114,6 +115,14 @@ struct RootView: View {
                     await chat.open(first)
                 }
             }
+            if screen == "sheet" {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                if let first = chat.sessions.first {
+                    debugOpenChat = true
+                    await chat.open(first)
+                    debugOpenSheet = true
+                }
+            }
             if screen == "new" {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 await chat.newSession()
@@ -173,7 +182,8 @@ struct RootView: View {
                     withAnimation(Motion.gentle) { mode = .web }
                 },
                 onSettings: { showSettings = true },
-                forceOpenChat: debugOpenChat
+                forceOpenChat: debugOpenChat,
+                forceOpenSheet: debugOpenSheet
             )
             .opacity(mode == .native ? 1 : 0)
             .allowsHitTesting(mode == .native)
@@ -289,16 +299,19 @@ struct NativeRoot: View {
     var onOpenWeb: () -> Void
     var onSettings: () -> Void
     var forceOpenChat: Bool = false
+    var forceOpenSheet: Bool = false
 
     @State private var showingChat: Bool
     @State private var didAutoOpen = false
 
     init(chat: ChatStore, onOpenWeb: @escaping () -> Void,
-         onSettings: @escaping () -> Void, forceOpenChat: Bool = false) {
+         onSettings: @escaping () -> Void,
+         forceOpenChat: Bool = false, forceOpenSheet: Bool = false) {
         self.chat = chat
         self.onOpenWeb = onOpenWeb
         self.onSettings = onSettings
         self.forceOpenChat = forceOpenChat
+        self.forceOpenSheet = forceOpenSheet
         _showingChat = State(initialValue: forceOpenChat)
     }
 
@@ -313,7 +326,8 @@ struct NativeRoot: View {
                             chat.close()
                         }
                     },
-                    onOpenWeb: onOpenWeb
+                    onOpenWeb: onOpenWeb,
+                    forceOpenSheet: forceOpenSheet
                 )
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),

@@ -73,9 +73,9 @@ jobs:
           }
 
           shoot a-launch "launch" 6
-          shoot b-sessions "" 3 6 12
-          shoot c-web "web" 24
-          shoot d-new "new" 30
+          shoot b-sessions "" 10
+          shoot c-sheet "sheet" 26
+          shoot d-web "web" 24
           xcrun simctl spawn "$DEVICE" log show --last 2m --predicate 'processImagePath CONTAINS "OpenCode"' 2>/dev/null | grep -iE "error|fatal|exception" | head -20 || true
           ls -lh shots
 

@@ -140,7 +140,8 @@ struct SessionListScreen: View {
                         onDelete: {
                             Task { await store.delete(session) }
                         },
-                        onOpenWeb: onOpenWeb
+                        onOpenWeb: onOpenWeb,
+                        busy: store.activeSessions.contains(session.id)
                     )
                 }
             }
@@ -287,6 +288,7 @@ struct SessionRow: View {
     var action: () -> Void
     var onDelete: () -> Void = {}
     var onOpenWeb: () -> Void = {}
+    var busy: Bool = false
 
     @State private var pressed = false
 
@@ -318,6 +320,19 @@ struct SessionRow: View {
                 }
 
                 Spacer(minLength: 6)
+
+                if busy {
+                    HStack(spacing: 3) {
+                        ForEach(0..<3, id: \.self) { index in
+                            Circle()
+                                .fill(Ink.azure)
+                                .frame(width: 3.5, height: 3.5)
+                                .opacity(0.5 + Double(index) * 0.25)
+                        }
+                    }
+                    .padding(.trailing, 2)
+                    .transition(.opacity)
+                }
 
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12, weight: .semibold))

@@ -29,6 +29,8 @@ final class ChatStore: ObservableObject {
     /// Текст последней ошибки — показывается над полем ввода.
     @Published var errorText: String?
     @Published private(set) var workingSessionID: String?
+    /// Сессии, в которых прямо сейчас идёт работа (в том числе с компьютера).
+    @Published private(set) var activeSessions: Set<String> = []
     /// Живой текст ответа до того, как сервер его сохранил.
     @Published private(set) var streamingText: String = ""
     @Published private(set) var streamingReasoning: String = ""
@@ -365,12 +367,18 @@ final class ChatStore: ObservableObject {
             streamingReasoning = ""
 
         case "session.execution.started":
+            if let id = event.data?.sessionID {
+                activeSessions.insert(id)
+            }
             guard event.data?.sessionID == sessionID else { return }
             isWorking = true
             workingSessionID = event.data?.sessionID
 
         case "session.execution.succeeded", "session.execution.failed",
              "session.execution.interrupted":
+            if let id = event.data?.sessionID {
+                activeSessions.remove(id)
+            }
             guard event.data?.sessionID == sessionID else { return }
             isWorking = false
             streamingReasoning = ""
@@ -382,8 +390,15 @@ final class ChatStore: ObservableObject {
         case "permission.asked":
             scheduleReload()
 
+        case "session.inbox.enqueued":
+            if let id = event.data?.sessionID {
+                activeSessions.insert(id)
+            }
+            scheduleReload()
+            await loadSessions()
+
         case "session.created", "session.deleted", "session.updated",
-             "session.archived", "session.moved", "session.inbox.enqueued":
+             "session.archived", "session.moved":
             scheduleReload()
             await loadSessions()
 

@@ -107,8 +107,30 @@ final class APIClient {
             return data
         } catch let error as APIError {
             throw error
+        } catch let error as URLError {
+            throw APIError.transport(Self.russian(error))
         } catch {
             throw APIError.transport(error.localizedDescription)
+        }
+    }
+
+    /// Системные ошибки связи — по-русски и по делу.
+    static func russian(_ error: URLError) -> String {
+        switch error.code {
+        case .notConnectedToInternet:
+            return "нет интернета. Проверь VPN и сеть"
+        case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+            return "сервер не отвечает. Ноутбук включён?"
+        case .timedOut:
+            return "сервер не ответил вовремя. Попробуй ещё раз"
+        case .networkConnectionLost:
+            return "связь прервалась"
+        case .secureConnectionFailed, .serverCertificateUntrusted:
+            return "не удалось установить защищённое соединение"
+        case .cancelled:
+            return "запрос отменён"
+        default:
+            return "сервер недоступен"
         }
     }
 

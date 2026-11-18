@@ -151,15 +151,23 @@ struct LaunchScreen: View {
         case .connecting: return "подключение к серверу"
         case .ready: return "готово"
         case .unauthorized: return "сервер не принял пароль"
-        case .failed: return "нет связи с сервером"
+        case .failed: return "не удалось подключиться"
         }
     }
 
     private var detailText: String? {
         switch phase {
-        case let .failed(message): return message
-        case .unauthorized: return "Проверь логин и пароль в настройках"
-        default: return nil
+        case let .failed(message):
+            // Заголовок уже говорит «нет связи» — не повторяем это дважды.
+            let cleaned = message
+                .replacingOccurrences(of: "Нет связи: ", with: "")
+                .replacingOccurrences(of: "Сервер не принял пароль", with: "")
+                .trimmingCharacters(in: .whitespaces)
+            return cleaned.isEmpty ? nil : cleaned
+        case .unauthorized:
+            return "Проверь логин и пароль в настройках"
+        default:
+            return nil
         }
     }
 }

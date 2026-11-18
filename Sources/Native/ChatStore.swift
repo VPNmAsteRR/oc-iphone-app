@@ -69,9 +69,25 @@ final class ChatStore: ObservableObject {
         Task { await connect() }
     }
 
+    /// Ограниченное время на подключение: если сервер молчит,
+    /// показываем ошибку, а не бесконечную заставку.
+    private func withTimeout(_ seconds: Double,
+                             _ operation: @escaping () async throws -> String) async throws -> String {
+        try await withThrowingTaskGroup(of: String.self) { group in
+            group.addTask { try await operation() }
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw APIError.transport("Сервер не ответил за \(Int(seconds)) секунд")
+            }
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
+        }
+    }
+
     private func connect() async {
         do {
-            _ = try await api.probe()
+            _ = try await withTimeout(14) { try await self.api.probe() }
             phase = .ready
             await loadSessions()
             await loadAgentsAndModels()
@@ -83,6 +99,8 @@ final class ChatStore: ObservableObject {
             } else {
                 phase = .failed(error.localizedDescription)
             }
+        } catch is CancellationError {
+            phase = .failed("Подключение прервано. Попробуй ещё раз.")
         } catch {
             phase = .failed(error.localizedDescription)
         }

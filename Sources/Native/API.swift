@@ -40,9 +40,12 @@ final class APIClient {
 
     init() {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForRequest = 25
-        config.timeoutIntervalForResource = 60
-        config.waitsForConnectivity = true
+        // Ждать «появления сети» нельзя: система держит запрос вечно,
+        // и человек видит бесконечную загрузку вместо понятной ошибки.
+        // Лучше честно упасть через 12 секунд и показать «Повторить».
+        config.timeoutIntervalForRequest = 12
+        config.timeoutIntervalForResource = 30
+        config.waitsForConnectivity = false
         config.requestCachePolicy = .reloadIgnoringLocalCacheData
         session = URLSession(configuration: config)
     }

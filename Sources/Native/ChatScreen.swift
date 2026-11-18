@@ -124,7 +124,10 @@ struct ChatScreen: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 14) {
                     if store.messages.isEmpty {
-                        quietStart
+                        VStack(spacing: 0) {
+                            quietStart
+                            quickActions
+                        }
                     } else {
                         ForEach(store.messages) { message in
                             MessageRow(message: message)
@@ -185,6 +188,54 @@ struct ChatScreen: View {
             }
         }
     }
+
+    private var quickActions: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            Text("С чего начать")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Ink.tertiary)
+                .textCase(.uppercase)
+                .padding(.leading, 4)
+
+            ForEach(Self.suggestions, id: \.self) { item in
+                Button {
+                    Haptic.select()
+                    store.draft = item
+                    composerFocused = true
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: "sparkle")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Ink.indigo.opacity(0.9))
+                        Text(item)
+                            .font(.system(size: 14))
+                            .foregroundStyle(Ink.primary.opacity(0.92))
+                            .multilineTextAlignment(.leading)
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Ink.raised.opacity(0.6))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .strokeBorder(Color.white.opacity(0.06), lineWidth: 1)
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.top, 18)
+    }
+
+    private static let suggestions = [
+        "Что мы делали в прошлый раз?",
+        "Покажи, что изменилось в проекте",
+        "Найди и исправь ошибку",
+    ]
 
     private var quietStart: some View {
         VStack(spacing: 14) {

@@ -142,6 +142,7 @@ struct WebView: UIViewRepresentable {
 
         context.coordinator.webView = web
         context.coordinator.installPullToRefresh(on: web)
+        context.coordinator.observeKeyboard(for: web)
         context.coordinator.load(url: url)
         return web
     }
@@ -171,6 +172,8 @@ struct WebView: UIViewRepresentable {
         var username: String
         var password: String
         var lastReloadToken = 0
+        private var keyboardObserver: NSObjectProtocol?
+        private var keyboardHideObserver: NSObjectProtocol?
         var onStateChange: (WebState) -> Void
         weak var webView: WKWebView?
         private var authRetries = 0
@@ -203,6 +206,15 @@ struct WebView: UIViewRepresentable {
             watchdog = nil
         }
 
+        deinit {
+            if let keyboardObserver {
+                NotificationCenter.default.removeObserver(keyboardObserver)
+            }
+            if let keyboardHideObserver {
+                NotificationCenter.default.removeObserver(keyboardHideObserver)
+            }
+        }
+
         func load(url: URL) {
             authRetries = 0
             var request = URLRequest(url: url)
@@ -214,6 +226,39 @@ struct WebView: UIViewRepresentable {
         }
 
         // MARK: Обновление жестом сверху вниз
+
+        // MARK: Клавиатура
+
+        /// Двигаем прокрутку вместе с клавиатурой на уровне UIKit.
+        ///
+        /// Внутри страницы высоту клавиатуры считает скрипт, но он видит
+        /// только `visualViewport` и на iOS успевает с опозданием: поле
+        /// ввода оказывается под клавиатурой. Здесь мы добавляем настоящий
+        /// отступ снизу у scrollView — он не зависит от JS.
+        func observeKeyboard(for web: WKWebView) {
+            keyboardObserver = NotificationCenter.default.addObserver(
+                forName: UIResponder.keyboardWillChangeFrameNotification,
+                object: nil,
+                queue: .main
+            ) { [weak web] note in
+                guard let web,
+                      let frame = note.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect
+                else { return }
+                let screen = web.window?.screen.bounds ?? UIScreen.main.bounds
+                let overlap = max(0, screen.maxY - frame.minY)
+                web.scrollView.contentInset.bottom = overlap
+                web.scrollView.verticalScrollIndicatorInsets.bottom = overlap
+            }
+
+            keyboardHideObserver = NotificationCenter.default.addObserver(
+                forName: UIResponder.keyboardWillHideNotification,
+                object: nil,
+                queue: .main
+            ) { [weak web] _ in
+                web?.scrollView.contentInset.bottom = 0
+                web?.scrollView.verticalScrollIndicatorInsets.bottom = 0
+            }
+        }
 
         func installPullToRefresh(on web: WKWebView) {
             let control = UIRefreshControl()

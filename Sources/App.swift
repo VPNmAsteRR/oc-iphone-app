@@ -118,8 +118,9 @@ struct RootView: View {
             if screen == "sheet" {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 if let first = chat.sessions.first {
-                    debugOpenChat = true
                     await chat.open(first)
+                    try? await Task.sleep(nanoseconds: 700_000_000)
+                    debugOpenChat = true
                     debugOpenSheet = true
                 }
             }

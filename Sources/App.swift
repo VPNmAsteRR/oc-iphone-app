@@ -176,45 +176,96 @@ struct RootView: View {
     }
 
     private var webMode: some View {
-        ZStack(alignment: .top) {
-            if let url = store.connection.url {
-                WebContainer(
-                    url: url,
-                    username: store.connection.username,
-                    password: store.connection.password,
-                    reloadToken: reloadToken,
-                    state: $state,
-                    onSettings: { showSettings = true }
-                )
-            }
-
-            // Выход обратно в родной чат — всегда на виду, сверху справа.
-            VStack {
-                HStack {
-                    Button {
-                        Haptic.tap(.medium)
-                        withAnimation(Motion.gentle) { mode = .native }
-                        Task { await chat.refreshFromBackground() }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "sparkles")
-                            Text("Мой чат")
-                        }
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(Ink.primary)
-                        .padding(.horizontal, 13)
-                        .padding(.vertical, 8)
+        VStack(spacing: 0) {
+            // Тонкая родная полоса: возврат в свой чат, настройки, состояние.
+            // Отдельная строка — чтобы не накрывать шапку интерфейса OpenCode.
+            HStack(spacing: 10) {
+                Button {
+                    Haptic.tap(.medium)
+                    withAnimation(Motion.gentle) { mode = .native }
+                    Task { await chat.refreshFromBackground() }
+                } label: {
+                    HStack(spacing: 5) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 11, weight: .bold))
+                        Text("Мой чат")
+                            .font(.system(size: 13, weight: .semibold))
                     }
-                    .glass(radius: 20, interactive: true)
-
-                    Spacer()
+                    .foregroundStyle(Ink.primary)
+                    .padding(.horizontal, 12)
+                    .frame(height: 30)
+                    .background(Capsule().fill(Color.white.opacity(0.09)))
                 }
-                .padding(.leading, 16)
-                .padding(.top, 6)
+                .buttonStyle(.plain)
 
                 Spacer()
+
+                if case let .failed(message) = state {
+                    Button {
+                        state = .loading
+                        reloadToken += 1
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "wifi.exclamationmark")
+                            Text(message)
+                                .lineLimit(1)
+                        }
+                        .font(.system(size: 11.5, weight: .medium))
+                        .foregroundStyle(Ink.coral)
+                        .padding(.horizontal, 10)
+                        .frame(height: 26)
+                        .background(Capsule().fill(Ink.coral.opacity(0.12)))
+                    }
+                    .buttonStyle(.plain)
+                } else if state == .loading {
+                    HStack(spacing: 6) {
+                        ProgressView().controlSize(.mini).tint(Ink.secondary)
+                        Text("Загрузка")
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(Ink.tertiary)
+                    }
+                }
+
+                Button {
+                    Haptic.tap()
+                    reloadToken += 1
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Ink.secondary)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color.white.opacity(0.07)))
+                }
+                .buttonStyle(.plain)
+
+                Button {
+                    Haptic.tap()
+                    showSettings = true
+                } label: {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Ink.secondary)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Color.white.opacity(0.07)))
+                }
+                .buttonStyle(.plain)
             }
-            .allowsHitTesting(mode == .web)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(Ink.void)
+
+            ZStack(alignment: .top) {
+                if let url = store.connection.url {
+                    WebContainer(
+                        url: url,
+                        username: store.connection.username,
+                        password: store.connection.password,
+                        reloadToken: reloadToken,
+                        state: $state,
+                        onSettings: { showSettings = true }
+                    )
+                }
+            }
         }
     }
 }
@@ -307,9 +358,9 @@ struct WebContainer: View {
                     zoom: settings.zoom,
                     reloadToken: reloadToken + localReloads,
                     onStateChange: { state = $0 })
-                // Не игнорируем клавиатуру: иначе она накрывает поле ввода.
-                // Верх (вырез) по-прежнему занимаем целиком.
-                .ignoresSafeArea(.container, edges: .top)
+                // Клавиатуру не игнорируем, иначе она накрывает поле ввода.
+                // Верх не растягиваем: над интерфейсом есть своя полоса.
+
 
             topOverlay
 

@@ -26,6 +26,8 @@ final class ChatStore: ObservableObject {
     @Published var draft: String = ""
     /// Идёт ли сейчас ответ и ждём ли первый текст.
     @Published private(set) var isWorking = false
+    /// Текст последней ошибки — показывается над полем ввода.
+    @Published var errorText: String?
     @Published private(set) var workingSessionID: String?
     /// Живой текст ответа до того, как сервер его сохранил.
     @Published private(set) var streamingText: String = ""
@@ -184,6 +186,7 @@ final class ChatStore: ObservableObject {
         guard let sessionID else { return }
 
         draft = ""
+        errorText = nil
         streamingText = ""
         streamingReasoning = ""
         isWorking = true
@@ -197,8 +200,8 @@ final class ChatStore: ObservableObject {
             await loadMessages(for: sessionID)
         } catch {
             isWorking = false
-            phase = .failed((error as? APIError)?.localizedDescription
-                            ?? error.localizedDescription)
+            errorText = (error as? APIError)?.localizedDescription
+                ?? error.localizedDescription
         }
     }
 
@@ -272,6 +275,15 @@ final class ChatStore: ObservableObject {
         } catch {
             return nil
         }
+    }
+
+    /// Повторить последнее сообщение пользователя (после обрыва связи).
+    func retryLast() async {
+        guard let last = messages.last(where: { $0.isUser }) else { return }
+        let text = last.userText
+        guard !text.isEmpty else { return }
+        draft = text
+        await send()
     }
 
     // MARK: Разрешения

@@ -44,6 +44,7 @@ final class AppSettings: ObservableObject {
 struct RootView: View {
     @EnvironmentObject private var store: ConnectionStore
     @StateObject private var chat = ChatStore()
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var setupDone: Bool
     @State private var mode: Mode = .native
@@ -122,6 +123,12 @@ struct RootView: View {
                 await chat.send()
             }
             #endif
+        }
+        .onChange(of: scenePhase) { phase in
+            // После сворачивания поток событий обрывается системой.
+            // Возвращаемся — сразу подключаемся заново и сверяемся с сервером.
+            guard phase == .active, setupDone else { return }
+            Task { await chat.refreshFromBackground() }
         }
         .onChange(of: chat.phase) { phase in
             #if DEBUG

@@ -207,6 +207,31 @@ struct ChatScreen: View {
         VStack(spacing: 0) {
             SoftDivider().opacity(0.5)
 
+            if let error = store.errorText {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Ink.amber)
+                    Text(error)
+                        .font(.system(size: 11.5))
+                        .foregroundStyle(Ink.secondary)
+                        .lineLimit(2)
+                    Spacer(minLength: 4)
+                    Button {
+                        Haptic.tap()
+                        Task { await store.retryLast() }
+                    } label: {
+                        Text("Повторить")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(Ink.azure)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+                .transition(.opacity)
+            }
+
             HStack(alignment: .bottom, spacing: 10) {
                 TextField("Спроси что угодно", text: $store.draft, axis: .vertical)
                     .textFieldStyle(.plain)

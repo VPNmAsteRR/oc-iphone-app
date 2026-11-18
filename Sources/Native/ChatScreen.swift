@@ -8,6 +8,7 @@ struct ChatScreen: View {
     var onBack: () -> Void
     var onOpenWeb: () -> Void
     var forceOpenSheet: Bool = false
+    var forceKeyboard: Bool = false
 
     @State private var appeared = false
     @FocusState private var composerFocused: Bool
@@ -19,14 +20,26 @@ struct ChatScreen: View {
 
             VStack(spacing: 0) {
                 header
+                // Поле ввода живёт в нижней безопасной зоне: над домашним
+                // индикатором и строго над клавиатурой, когда она открыта.
                 transcript
-                composerArea
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        composerArea
+                    }
             }
         }
         .onAppear {
             withAnimation(Motion.gentle) { appeared = true }
         }
         .task {
+            #if DEBUG
+            // Отладка: открыть клавиатуру, чтобы проверить, что поле ввода
+            // не оказывается под ней на любом размере экрана.
+            if forceKeyboard {
+                try? await Task.sleep(nanoseconds: 800_000_000)
+                composerFocused = true
+            }
+            #endif
             guard forceOpenSheet else { return }
             try? await Task.sleep(nanoseconds: 900_000_000)
             showInfo = true
@@ -341,9 +354,16 @@ struct ChatScreen: View {
             .shadow(color: .black.opacity(0.4), radius: 18, y: 8)
             .padding(.horizontal, 14)
             .padding(.top, 10)
-            .padding(.bottom, 6)
+            .padding(.bottom, 8)
         }
-        .background(.ultraThinMaterial)
+        // Подложка тянется до низа экрана, а само поле стоит над
+        // домашним индикатором. Клавиатуру не игнорируем — SwiftUI сам
+        // поднимает панель, когда она открывается.
+        .background {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea(edges: .bottom)
+        }
         .transition(.move(edge: .bottom))
     }
 

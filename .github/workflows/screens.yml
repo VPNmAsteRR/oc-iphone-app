@@ -13,7 +13,6 @@ jobs:
         run: |
           xcodebuild -version
           xcrun simctl list runtimes | head -20
-          xcrun simctl list devices available | grep -E "iPhone" | head -20
 
       - name: Install XcodeGen
         run: |
@@ -31,11 +30,10 @@ jobs:
           set -euo pipefail
           python3 build_css.py
           xcodegen generate --spec project.yml
-          DEVICE=$(xcrun simctl list devices available | grep -oE "iPhone [0-9]+ Pro" | head -1)
-          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+          # Собираем один раз: приложение одно и то же для всех экранов.
           xcodebuild -project OpenCodeWeb.xcodeproj -scheme OpenCodeWeb \
             -configuration Debug -sdk iphonesimulator \
-            -destination "platform=iOS Simulator,name=$DEVICE" \
+            -destination "generic/platform=iOS Simulator" \
             -derivedDataPath "$RUNNER_TEMP/dd" \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" EXPANDED_CODE_SIGN_IDENTITY="" \
@@ -49,46 +47,65 @@ jobs:
           set -uo pipefail
           APP=$(find "$RUNNER_TEMP/dd/Build/Products" -name "OpenCode.app" -maxdepth 3 | head -1)
           echo "app: $APP"
-          xcrun simctl boot "$DEVICE" || true
-          xcrun simctl bootstatus "$DEVICE" -b || true
-          xcrun simctl install "$DEVICE" "$APP"
           mkdir -p shots
 
+          # Три размера с разной геометрией выреза:
+          #  - iPhone 16e      — маленький экран, есть островок
+          #  - iPhone 17 Pro   — обычный
+          #  - iPhone 17 Pro Max — самый крупный, легко заметить перекосы
+          DEVICES=(
+            "iPhone 16e"
+            "iPhone 17 Pro"
+            "iPhone 17 Pro Max"
+          )
+          SLUGS=("16e" "17pro" "17promax")
+
           shoot () {
-            local name="$1"; local extra="$2"; shift 2
-            xcrun simctl terminate "$DEVICE" dev.opencode2.mobile 2>/dev/null || true
+            local device="$1"; local name="$2"; local extra="$3"; shift 3
+            xcrun simctl terminate "$device" dev.opencode2.mobile 2>/dev/null || true
             sleep 1
             SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
             SIMCTL_CHILD_OC_URL="${OC_URL:-https://oc.13.143.161.69.sslip.io:8443}" \
             SIMCTL_CHILD_OC_USER=opencode \
             SIMCTL_CHILD_OC_SCREEN="$extra" \
-            xcrun simctl launch "$DEVICE" dev.opencode2.mobile >/dev/null || true
-            # Снимаем несколько кадров за один запуск: видно, как идёт появление.
+            xcrun simctl launch "$device" dev.opencode2.mobile >/dev/null || true
             local tag=1
             for wait in "$@"; do
               sleep "$wait"
-              xcrun simctl io "$DEVICE" screenshot "shots/${name}-${tag}.png" || true
+              xcrun simctl io "$device" screenshot "shots/${name}-${tag}.png" || true
               tag=$((tag+1))
             done
           }
 
-          shoot a-launch "launch" 6
-          shoot b-sessions "" 10
-          shoot c-sheet "sheet" 26
-          shoot d-empty "empty" 20
-          shoot e-web "web" 24
+          for index in "${!DEVICES[@]}"; do
+            device="${DEVICES[$index]}"
+            slug="${SLUGS[$index]}"
 
-          # Отдельная проверка: сервер недоступен. Должны быть понятные
-          # кнопки, а не бесконечная загрузка.
-          xcrun simctl terminate "$DEVICE" dev.opencode2.mobile 2>/dev/null || true
-          sleep 1
-          SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
-          SIMCTL_CHILD_OC_URL="https://127.0.0.1:9" \
-          SIMCTL_CHILD_OC_USER=opencode \
-          xcrun simctl launch "$DEVICE" dev.opencode2.mobile >/dev/null || true
-          sleep 14
-          xcrun simctl io "$DEVICE" screenshot "shots/f-offline.png" || true
-          xcrun simctl spawn "$DEVICE" log show --last 2m --predicate 'processImagePath CONTAINS "OpenCode"' 2>/dev/null | grep -iE "error|fatal|exception" | head -20 || true
+            echo "=== $device"
+            xcrun simctl boot "$device" 2>/dev/null || true
+            xcrun simctl bootstatus "$device" -b 2>/dev/null || true
+            xcrun simctl install "$device" "$APP"
+
+            shoot "$device" "${slug}-a-launch" "launch" 6
+            shoot "$device" "${slug}-b-sessions" "" 10
+            shoot "$device" "${slug}-c-empty" "empty" 20
+            shoot "$device" "${slug}-d-web" "web" 24
+            # Клавиатура открыта: поле ввода не должно оказаться под ней.
+            shoot "$device" "${slug}-f-keyboard" "keyboard" 26
+
+            # Без связи: должны быть понятные кнопки, а не бесконечная загрузка.
+            xcrun simctl terminate "$device" dev.opencode2.mobile 2>/dev/null || true
+            sleep 1
+            SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
+            SIMCTL_CHILD_OC_URL="https://127.0.0.1:9" \
+            SIMCTL_CHILD_OC_USER=opencode \
+            xcrun simctl launch "$device" dev.opencode2.mobile >/dev/null || true
+            sleep 14
+            xcrun simctl io "$device" screenshot "shots/${slug}-e-offline.png" || true
+
+            xcrun simctl shutdown "$device" 2>/dev/null || true
+          done
+
           ls -lh shots
 
       - uses: actions/upload-artifact@v4

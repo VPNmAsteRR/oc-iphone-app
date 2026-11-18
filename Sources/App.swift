@@ -54,6 +54,7 @@ struct RootView: View {
     @State private var showLaunch: Bool
     @State private var debugOpenChat = false
     @State private var debugOpenSheet = false
+    @State private var debugKeyboard = false
     @State private var launchFaded = false
 
     enum Mode { case native, web }
@@ -124,6 +125,15 @@ struct RootView: View {
                     debugOpenSheet = true
                 }
             }
+            if screen == "keyboard" {
+                try? await Task.sleep(nanoseconds: 900_000_000)
+                if let first = chat.sessions.first {
+                    await chat.open(first)
+                    try? await Task.sleep(nanoseconds: 900_000_000)
+                    debugOpenChat = true
+                    debugKeyboard = true
+                }
+            }
             if screen == "empty" {
                 try? await Task.sleep(nanoseconds: 900_000_000)
                 await chat.newSession()
@@ -192,7 +202,8 @@ struct RootView: View {
                 },
                 onSettings: { showSettings = true },
                 forceOpenChat: debugOpenChat,
-                forceOpenSheet: debugOpenSheet
+                forceOpenSheet: debugOpenSheet,
+                forceKeyboard: debugKeyboard
             )
             .opacity(mode == .native ? 1 : 0)
             .allowsHitTesting(mode == .native)
@@ -309,18 +320,21 @@ struct NativeRoot: View {
     var onSettings: () -> Void
     var forceOpenChat: Bool = false
     var forceOpenSheet: Bool = false
+    var forceKeyboard: Bool = false
 
     @State private var showingChat: Bool
     @State private var didAutoOpen = false
 
     init(chat: ChatStore, onOpenWeb: @escaping () -> Void,
          onSettings: @escaping () -> Void,
-         forceOpenChat: Bool = false, forceOpenSheet: Bool = false) {
+         forceOpenChat: Bool = false, forceOpenSheet: Bool = false,
+         forceKeyboard: Bool = false) {
         self.chat = chat
         self.onOpenWeb = onOpenWeb
         self.onSettings = onSettings
         self.forceOpenChat = forceOpenChat
         self.forceOpenSheet = forceOpenSheet
+        self.forceKeyboard = forceKeyboard
         _showingChat = State(initialValue: forceOpenChat)
     }
 
@@ -336,7 +350,8 @@ struct NativeRoot: View {
                         }
                     },
                     onOpenWeb: onOpenWeb,
-                    forceOpenSheet: forceOpenSheet
+                    forceOpenSheet: forceOpenSheet,
+                    forceKeyboard: forceKeyboard
                 )
                 .transition(.asymmetric(
                     insertion: .move(edge: .trailing).combined(with: .opacity),

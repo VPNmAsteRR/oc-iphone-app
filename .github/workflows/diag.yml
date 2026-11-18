@@ -10,6 +10,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install XcodeGen
+        run: |
+          set -euo pipefail
+          P="$RUNNER_TEMP/xg"
+          mkdir -p "$P"
+          curl -fsSL -o "$RUNNER_TEMP/xg.zip" \
+            "https://github.com/yonaskolb/XcodeGen/releases/download/2.43.0/xcodegen.zip"
+          unzip -q "$RUNNER_TEMP/xg.zip" -d "$RUNNER_TEMP/xgu"
+          bash "$RUNNER_TEMP/xgu/xcodegen/install.sh" "$P"
+          echo "$P/bin" >> "$GITHUB_PATH"
+
       - name: Build
         run: |
           set -euo pipefail

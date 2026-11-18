@@ -55,7 +55,7 @@ jobs:
           mkdir -p shots
 
           shoot () {
-            local name="$1"; local extra="$2"; local wait="${3:-9}"
+            local name="$1"; local extra="$2"; shift 2
             xcrun simctl terminate "$DEVICE" dev.opencode2.mobile 2>/dev/null || true
             sleep 1
             SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
@@ -63,14 +63,19 @@ jobs:
             SIMCTL_CHILD_OC_USER=opencode \
             SIMCTL_CHILD_OC_SCREEN="$extra" \
             xcrun simctl launch "$DEVICE" dev.opencode2.mobile >/dev/null || true
-            sleep "$wait"
-            xcrun simctl io "$DEVICE" screenshot "shots/$name.png" || true
+            # Снимаем несколько кадров за один запуск: видно, как идёт появление.
+            local tag=1
+            for wait in "$@"; do
+              sleep "$wait"
+              xcrun simctl io "$DEVICE" screenshot "shots/${name}-${tag}.png" || true
+              tag=$((tag+1))
+            done
           }
 
-          shoot 01-launch "launch" 5
-          shoot 02-sessions "" 12
-          shoot 03-web "web" 22
-          shoot 04-new "new" 28
+          shoot a-launch "launch" 6
+          shoot b-sessions "" 3 6 12
+          shoot c-web "web" 24
+          shoot d-new "new" 30
           xcrun simctl spawn "$DEVICE" log show --last 2m --predicate 'processImagePath CONTAINS "OpenCode"' 2>/dev/null | grep -iE "error|fatal|exception" | head -20 || true
           ls -lh shots
 

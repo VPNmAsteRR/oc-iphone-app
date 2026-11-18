@@ -358,6 +358,20 @@ textarea, input {
   font-size: max(16px, 1em) !important;
 }
 
+/* Подсказки в полях: тот же мягкий серый, что и в остальном тексте */
+input::placeholder,
+textarea::placeholder,
+[contenteditable="true"] [data-placeholder] {
+  color: #8e949c !important;
+  opacity: 1 !important;
+}
+
+/* Поиск на главной: таблетка, как в Gemini */
+[class*="search"] input,
+input[type="search"] {
+  background: transparent !important;
+}
+
 ::-webkit-scrollbar { width: 0; height: 0; }
 
 @media (prefers-reduced-motion: reduce) {

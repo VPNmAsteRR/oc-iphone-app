@@ -29,6 +29,7 @@ jobs:
       - name: Build for simulator
         run: |
           set -euo pipefail
+          python3 build_css.py
           xcodegen generate --spec project.yml
           DEVICE=$(xcrun simctl list devices available | grep -oE "iPhone [0-9]+ Pro" | head -1)
           echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"

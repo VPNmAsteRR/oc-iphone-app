@@ -37,6 +37,11 @@ jobs:
           bash "$RUNNER_TEMP/xgu/xcodegen/install.sh" "$P"
           echo "$P/bin" >> "$GITHUB_PATH"
 
+      - name: Bake shell styles
+        run: |
+          set -euo pipefail
+          python3 build_css.py
+
       - name: Generate project
         run: |
           set -euo pipefail

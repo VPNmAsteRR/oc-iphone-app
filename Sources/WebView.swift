@@ -39,20 +39,59 @@ struct WebView: UIViewRepresentable {
 
         let styleScript = WKUserScript(source: """
         (function() {
+          var CSS = `__OC_CSS__`;
+
+          // Стили OpenCode подключаются ссылками в <head> и загружаются
+          // ПОСЛЕ наших вставок. Поэтому свою таблицу держим последней
+          // в документе: при равной специфичности побеждает то, что ниже.
           function apply() {
-            var s = document.getElementById('__oc_shell_style');
-            if (!s) {
-              s = document.createElement('style');
-              s.id = '__oc_shell_style';
-              (document.head || document.documentElement).appendChild(s);
+            var style = document.getElementById('__oc_shell_style');
+            if (!style) {
+              style = document.createElement('style');
+              style.id = '__oc_shell_style';
             }
-            s.textContent = `\(css.replacingOccurrences(of: "`", with: "\\`").replacingOccurrences(of: "\\", with: "\\\\"))`;
+            if (style.textContent !== CSS) {
+              style.textContent = CSS;
+            }
+            var parent = document.body || document.documentElement;
+            if (!parent) return;
+            if (style.parentNode !== parent || parent.lastElementChild !== style) {
+              parent.appendChild(style);   // appendChild переносит в конец
+            }
           }
+
           apply();
           document.addEventListener('DOMContentLoaded', apply);
-          new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: false });
+          window.addEventListener('load', apply);
+
+          // Новые стили, шрифты и подгружаемые куски интерфейса появляются
+          // в процессе работы — возвращаем свою таблицу в конец.
+          var pending = false;
+          function schedule() {
+            if (pending) return;
+            pending = true;
+            setTimeout(function() {
+              pending = false;
+              apply();
+            }, 120);
+          }
+
+          try {
+            new MutationObserver(schedule).observe(document.documentElement, {
+              childList: true, subtree: true
+            });
+          } catch (e) {}
+
+          // Страховка на первые секунды: интерфейс собирается постепенно.
+          [80, 300, 800, 1600, 3000].forEach(function (ms) {
+            setTimeout(apply, ms);
+          });
         })();
-        """, injectionTime: .atDocumentStart, forMainFrameOnly: true)
+        """.replacingOccurrences(of: "__OC_CSS__", with: css
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "`", with: "\\`")
+            .replacingOccurrences(of: "${", with: "\\${")),
+            injectionTime: .atDocumentStart, forMainFrameOnly: true)
         controller.addUserScript(styleScript)
 
         // Разметка ключевых элементов интерфейса стабильными классами

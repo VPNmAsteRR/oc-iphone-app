@@ -77,6 +77,17 @@ jobs:
           shoot c-sheet "sheet" 26
           shoot d-empty "empty" 20
           shoot e-web "web" 24
+
+          # Отдельная проверка: сервер недоступен. Должны быть понятные
+          # кнопки, а не бесконечная загрузка.
+          xcrun simctl terminate "$DEVICE" dev.opencode2.mobile 2>/dev/null || true
+          sleep 1
+          SIMCTL_CHILD_OC_PASSWORD="$OC_PASSWORD" \
+          SIMCTL_CHILD_OC_URL="https://127.0.0.1:9" \
+          SIMCTL_CHILD_OC_USER=opencode \
+          xcrun simctl launch "$DEVICE" dev.opencode2.mobile >/dev/null || true
+          sleep 14
+          xcrun simctl io "$DEVICE" screenshot "shots/f-offline.png" || true
           xcrun simctl spawn "$DEVICE" log show --last 2m --predicate 'processImagePath CONTAINS "OpenCode"' 2>/dev/null | grep -iE "error|fatal|exception" | head -20 || true
           ls -lh shots
 
